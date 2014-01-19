@@ -1,0 +1,291 @@
+* Slob
+  Slob is a read-only, compressed data store with dictionary-like
+  interface to look up content by text keys. Keys are sorted
+  according to [[http://www.unicode.org/reports/tr10/][Unicode Collation Algorithm]]. This allows to perform
+  punctuation, case and diacritics insensitive lookups. /slob.py/ is
+  a reference  implementation of slob format reader and writer in
+  [[http://python.org][Python 3]].
+
+** Installation
+
+   slob.py depends on the following components:
+
+   - [[http://python.org][Python]] >= 3.3
+   - [[http://icu-project.org][ICU]] >= 4.8
+   - [[https://pypi.python.org/pypi/PyICU][PyICU]] >= 1.5
+
+   Consult your operating system documentation and these component's
+   websites for installation instructions.
+
+   For example, on Ubuntu 13.10, the following command installs
+   required packages:
+
+   #+BEGIN_SRC sh
+   sudo apt-get install python3.3 python3-icu
+   #+END_SRC
+
+   Create new Python virtual environment:
+
+   #+BEGIN_SRC sh
+   python3 -m venv env-slob --system-site-packages
+   #+END_SRC
+
+   Activate it:
+
+   #+BEGIN_SRC sh
+   source env-slob/bin/activate
+   #+END_SRC
+
+   See also http://docs.python.org/3/library/venv.html
+
+   Install [[http://www.pip-installer.org/][pip]]:
+
+   #+BEGIN_SRC sh
+   curl https://bitbucket.org/pypa/setuptools/raw/bootstrap/ez_setup.py | python
+   curl https://raw.github.com/pypa/pip/master/contrib/get-pip.py | python
+   source env-slob/bin/activate
+   #+END_SRC
+
+   Install from source code repository ([[http://git-scm.com/][git]] needs to be installed):
+
+   #+BEGIN_SRC sh
+   pip install git+https://github.com/itkach/slob.git
+   #+END_SRC
+
+   or, download source code manually:
+
+   #+BEGIN_SRC sh
+   wget https://github.com/itkach/slob/archive/master.zip
+   pip install master.zip
+   #+END_SRC
+
+** Examples
+
+*** Basic Usage
+
+    Create a slob:
+
+    #+BEGIN_SRC python
+      import slob
+      with slob.create('test.slob') as w:
+          w.add(b'Hello A', 'a')
+          w.add(b'Hello B', 'b')
+    #+END_SRC
+
+    Read content:
+
+    #+BEGIN_SRC python
+      import slob
+      with slob.open('test.slob') as r:
+          d = r.as_dict()
+          for key in ('a', 'b'):
+              result = next(d[key])
+              print(result.content)
+
+    #+END_SRC
+
+    will print
+
+    #+BEGIN_SRC
+b'Hello A'
+b'Hello B'
+    #+END_SRC
+
+
+    Slob we created in this example certainly works, but it is not
+    ideal: we neglected to specify content type for the content we
+    are adding. Lets consider a slightly more involved example:
+
+    #+BEGIN_SRC python
+      import slob
+      PLAIN_TEXT = 'text/plain; charset=utf-8'
+      with slob.create('test1.slob') as w:
+          w.add('Hello, Earth!'.encode('utf-8'),
+                'earth', 'terra', content_type=PLAIN_TEXT)
+          w.add_alias('земля', 'earth')
+          w.add('Hello, Mars!'.encode('utf-8'), 'mars',
+                content_type=PLAIN_TEXT)
+    #+END_SRC
+
+    Here we specify MIME type of the content we are adding so that
+    consumers of this content can display or process it
+    properly. Note that the same content may be associated with
+    multiple keys, either when it is added or later with /add_alias/.
+
+    This
+
+    #+BEGIN_SRC python
+      with slob.open('test1.slob') as r:
+
+          def p(blob):
+              print(blob.id, blob.content_type, blob.content)
+
+          for key in ('earth', 'земля', 'terra'):
+              blob = next(r.as_dict()[key])
+              p(blob)
+
+          p(next(r.as_dict()['mars']))
+
+    #+END_SRC
+
+    will print
+
+    #+BEGIN_SRC
+0 text/plain; charset=utf-8 b'Hello, Earth!'
+0 text/plain; charset=utf-8 b'Hello, Earth!'
+0 text/plain; charset=utf-8 b'Hello, Earth!'
+1 text/plain; charset=utf-8 b'Hello, Mars!'
+    #+END_SRC
+
+    Note that blob id for the first three keys is the same, they all
+    point to the same content item.
+
+    Take a look at tests in slob.py for more examples.
+
+*** Slobby - Minimalistic Web UI
+
+    See http://github.com/itkach/slobby/
+
+*** Convert from Aard Dictionary
+
+    See http://github.com/itkach/aar2slob/
+
+
+** Slob File Format
+
+*** Slob
+
+| Element       | Type                                       | Description                                                                                                                            |
+|---------------+--------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------|
+| magic         | fixed size sequence of 8 bytes             | Bytes ~21 2d 31 53 4c 4f 42 1f~: string ~!-1SLOB~ followed  by ascii unit separator (ascii hex code ~1f~) identifying slob format      |
+|---------------+--------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------|
+| uuid          | fixed size sequence of 16 bytes            | unique slob identifier ([[https://tools.ietf.org/html/rfc4122][RFC 4122]] UUID)                                                                                                 |
+|---------------+--------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------|
+| encoding      | tiny text (utf8)                           | Name of text encoding used for all other text elements: tag names and values, content types, keys, fragments                           |
+|---------------+--------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------|
+| compression   | tiny text                                  | Name of compression algorithm used to compress storage bins.                                                                           |
+|               |                                            | slob.py understands following names: /bz2/, /gzip/, /zlib/ which correspond to Python module names,                                    |
+|               |                                            | and /lzma2/ which refers to raw lzma2 compression with custom filter (this is default).                                                |
+|               |                                            | Empty value means bins are not compressed. Additional compression algorithms can be registered.                                        |
+|---------------+--------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------|
+| tags          | char-sized sequence of tags                | Tags are text key-value pairs that may provide additional information about slob or its data.                                          |
+|---------------+--------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------|
+| content types | char-sized sequence of content types       | MIME content types. Content items refer to content types by id. Content type id is 0-based position of content type in this  sequence. |
+|---------------+--------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------|
+| blob count    | int                                        | Number of content items stored in the slob                                                                                             |
+|---------------+--------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------|
+| store offset  | long                                       | File position at which store data begins                                                                                               |
+|---------------+--------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------|
+| size          | long                                       | Total file byte size (or sum of all files if slob is split into multiple files)                                                        |
+|---------------+--------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------|
+| refs          | list of long-positioned refs               | References to content                                                                                                                  |
+|---------------+--------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------|
+| store         | list of long-positioned large byte strings | Each item in the store (large byte string) represent compressed bin bytes                                                              |
+
+
+
+*** tiny text
+
+    char-sized sequence of encoded text bytes
+
+
+*** text
+
+    short-sized sequence of encoded text bytes
+
+
+*** large byte string
+
+    int-sized sequence of bytes
+
+
+*** /size type/-sized sequence of /items/
+
+     | Element | Type                      |
+     |---------+---------------------------|
+     | count   | /size type/               |
+     | items   | sequence of /count/ items |
+
+
+*** tag
+
+     | Element | Type      |
+     |---------+-----------|
+     | name    | tiny text |
+     | value   | tiny text |
+
+
+*** content type
+
+    text
+
+
+*** ref
+
+     | Element    | Type      | Description                                           |
+     |------------+-----------+-------------------------------------------------------|
+     | key        | text      | Text key associated with content                      |
+     | bin index  | int       | Index of compressed bin containing content            |
+     | item index | short     | Index of content item inside uncompressed bin         |
+     | fragment   | tiny text | Text identifier of a specific location inside content |
+
+
+*** bin
+
+    list of int-positioned content items
+
+*** content item
+
+     | Element         | Type              | Description                                             |
+     |-----------------+-------------------+---------------------------------------------------------|
+     | content type id | char              | Index of content type item in the content type sequence |
+     | content         | large byte string | Actual content bytes                                    |
+
+
+*** list of /position type/-positioned /items/
+
+     | Element   | Type                                                        | Description                                                                                         |
+     |-----------+-------------------------------------------------------------+-----------------------------------------------------------------------------------------------------|
+     | positions | int-sized sequence of item offsets of type /position type/. | Item offset specifies position in file where item data starts, relative to the end of position data |
+     | items     | sequence of /items/                                         |                                                                                                     |
+
+*** char
+    unsigned char (1 byte)
+
+*** short
+    big endian unsigned short (2 bytes)
+
+*** int
+    big endian unsigned int (4 bytes)
+
+*** long
+    big endian unsigned long long (8 bytes)
+
+
+** Design Considerations
+
+   Slob format design is influenced by [[http://aarddict.org/][Aard Dictionary]]'s aard and [[http://openzim.org/][ZIM]]
+   file formats. Similar to Aard Dictionary, it allows to perform
+   non-exact lookups based on UCA's notion of collation
+   strength. Similar to ZIM, it groups and compresses multiple
+   content items to achieve high compression ratio and can combine
+   several physical files into one logical container. Both aard and
+   ZIM contain vestigial elements of predecessor formats as well
+   as elements specific to a particular use case (such as
+   implementing offline Wikipedia content access). Slob aims to
+   provide a minimal framework to allow building such applications
+   while remaining a simple, generic, read-only data store.
+
+*** No Format Version
+    Slob header doesn't contain explicit file format version
+    number. Any incompatible changes after the format is finalized
+    will be introduced in a new file format which will get its own
+    identifying magic bytes.
+
+*** No Content Checksum
+    Unlike aard and ZIM file formats, slob doesn't contain
+    content checksum. File integrity can be easily verified by
+    employing standard tools to calculate content hash. Inclusion of
+    pre-calculated hash into the file itself prevents using most
+    standard tools and puts burden of implementing hash calculation
+    on every slob reader implementation.
