@@ -150,6 +150,25 @@ b'Hello B'
 
     See http://github.com/itkach/aar2slob/
 
+*** Download Sample Slobs
+
+    - [[http://dl.aarddict.org/1jfC9Yo][enwiktionary-20110604.slob]]
+
+      + size :: 319Mb
+      + sha1 :: 7889973ccdbb2e917148516b5be2ca5cd376810a
+      + md5 :: 98bc66c6542b06ef3aafff8b89e9515b
+
+    - [[http://dl.aarddict.org/1e4fGpY][simplewiki-20131030.slob]]
+
+      + size :: 83 Mb
+      + sha1 :: b08155df5f940864b1f7a0b349bcf26f8b1893c7
+      + md5 :: af175fed09ce478aa93c10ad61d7c0ef
+
+    - [[http://dl.aarddict.org/1dTl3em][wordnet-3.0.slob]]
+
+      + size :: 18 Mb
+      + sha1 :: bf6b2c130645091bd02e3d25ad11a406dccf5999
+      + md5 :: 6f042858071c7d7f7b8542f63c17c731
 
 ** Slob File Format
 
