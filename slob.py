@@ -688,6 +688,13 @@ def find(word, slobs, match_prefix=True):
 WriterEvent = namedtuple('WriterEvent', 'name data')
 
 
+class KeyTooLongException(Exception):
+
+    @property
+    def key(self):
+        return self.args[0]
+
+
 class Writer(object):
 
     def __init__(self,
@@ -766,6 +773,17 @@ class Writer(object):
             return
         self._tags[name] = value
 
+    def _split_key(self, key):
+        if isinstance(key, str):
+            actual_key = key
+            fragment = ''
+        else:
+            actual_key, fragment = key
+        if (len(actual_key) > MAX_TEXT_LEN or
+            len(fragment) > MAX_TINY_TEXT_LEN):
+            raise KeyTooLongException(key)
+        return actual_key, fragment
+
     def add(self, blob, *keys, content_type=''):
 
         if len(blob) > MAX_LARGE_BYTE_STRING_LEN:
@@ -779,16 +797,12 @@ class Writer(object):
         actual_keys = []
 
         for key in keys:
-            if isinstance(key, str):
-                actual_key = key
-                fragment = ''
+            try:
+                actual_key, fragment = self._split_key(key)
+            except KeyTooLongException as e:
+                self._fire_event('key_too_long', e.key)
             else:
-                actual_key, fragment = key
-            if (len(actual_key) > MAX_TEXT_LEN or
-                len(fragment) > MAX_TINY_TEXT_LEN):
-                self._fire_event('key_too_long', key)
-                continue
-            actual_keys.append((actual_key, fragment))
+                actual_keys.append((actual_key, fragment))
 
         if len(actual_keys) == 0:
             return
@@ -813,11 +827,15 @@ class Writer(object):
 
     def add_alias(self, key, target_key):
         if self.max_redirects:
-            if len(key) > MAX_TEXT_LEN:
-                self._fire_event('alias_too_long', key)
+            try:
+                self._split_key(key)
+            except KeyTooLongException as e:
+                self._fire_event('alias_too_long', e.key)
                 return
-            if len(target_key) > MAX_TEXT_LEN:
-                self._fire_event('alias_target_too_long', target_key)
+            try:
+                self._split_key(target_key)
+            except KeyTooLongException as e:
+                self._fire_event('alias_target_too_long', e.key)
                 return
             self.f_aliases.add(pickle.dumps(target_key), key)
         else:
@@ -1546,7 +1564,9 @@ class TestTooLongText(unittest.TestCase):
         tag_with_long_name = (long_tag_name, 't3 value')
         tag_with_long_value = ('t1', long_tag_value)
         long_alias = 'f'*(MAX_TEXT_LEN+1)
+        alias_with_long_frag = ('i', long_frag)
         long_alias_target = long_key
+        long_alias_target_frag = key_with_long_frag
 
         with create(self.path, observer=observer) as w:
 
@@ -1565,16 +1585,18 @@ class TestTooLongText(unittest.TestCase):
 
             w.add_alias('e', 'a')
             w.add_alias(long_alias, 'a')
+            w.add_alias(alias_with_long_frag, 'a')
             w.add_alias('g', long_alias_target)
+            w.add_alias('h', long_alias_target_frag)
 
             w.add(b'Hello', 'hello', content_type=long_content_type)
 
         self.assertEqual(rejected_keys,
                          [long_key, key_with_long_frag])
         self.assertEqual(rejected_aliases,
-                         [long_alias])
+                         [long_alias, alias_with_long_frag])
         self.assertEqual(rejected_alias_targets,
-                         [long_alias_target])
+                         [long_alias_target, long_alias_target_frag])
         self.assertEqual(rejected_tags,
                          [tag_with_long_value, tag_with_long_name])
         self.assertEqual(rejected_content_types,
