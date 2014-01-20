@@ -1,10 +1,10 @@
 * Slob
-  Slob is a read-only, compressed data store with dictionary-like
-  interface to look up content by text keys. Keys are sorted
-  according to [[http://www.unicode.org/reports/tr10/][Unicode Collation Algorithm]]. This allows to perform
-  punctuation, case and diacritics insensitive lookups. /slob.py/ is
-  a reference  implementation of slob format reader and writer in
-  [[http://python.org][Python 3]].
+  Slob (sorted list of blobs) is a read-only, compressed data store
+  with dictionary-like interface to look up content by text keys. Keys
+  are sorted according to [[http://www.unicode.org/reports/tr10/][Unicode Collation Algorithm]]. This allows to
+  perform punctuation, case and diacritics insensitive
+  lookups. /slob.py/ is a reference implementation of slob format
+  reader and writer in [[http://python.org][Python 3]].
 
 ** Installation
 
