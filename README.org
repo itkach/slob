@@ -170,6 +170,13 @@ b'Hello B'
       + sha1 :: bf6b2c130645091bd02e3d25ad11a406dccf5999
       + md5 :: 6f042858071c7d7f7b8542f63c17c731
 
+    - [[http://dl.aarddict.org/1egh4pm][ruwiki-20130206.slob]]
+
+      + size :: 1.8 Gb
+      + sha1 :: aee78f4f64097b092cee8ffc7e625d685358e851
+      + md5 :: 82209d7bebe43f69a7d3117e8d5a7be5
+
+
 ** Slob File Format
 
 *** Slob
