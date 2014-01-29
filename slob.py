@@ -67,13 +67,14 @@ IDENTICAL = Collator.IDENTICAL
 def init_compressions():
     ident = lambda x: x
     compressions = {'': Compression(ident, ident)}
-    for name in ('bz2', 'gzip', 'zlib'):
+    for name in ('bz2', 'zlib'):
         try:
             m = __import__(name)
         except ImportError:
             warnings.warn('%s is not available' % name)
         else:
-            compressions[name] = Compression(m.compress, m.decompress)
+            compressions[name] = Compression(
+                lambda x: m.compress(x, 9), m.decompress)
 
     try:
         import lzma
