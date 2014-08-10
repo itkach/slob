@@ -126,7 +126,17 @@ def sortkey(strength, maxlength=None):
     if maxlength is None:
         return c.getSortKey
     else:
-        return lambda x: c.getSortKey(x[:maxlength])
+        return lambda x: c.getSortKey(x)[:maxlength]
+
+
+def sortkey_length(strength, word):
+    c = Collator.createInstance(Locale(''))
+    c.setStrength(strength)
+    c.setAttribute(UCollAttribute.ALTERNATE_HANDLING,
+                   UCollAttributeValue.SHIFTED)
+    coll_key = c.getSortKey(word)
+    print(coll_key)
+    return len(coll_key) - 1 #subtract 1 for ending \x00 byte
 
 
 class MultiFileReader(io.BufferedIOBase):
@@ -672,18 +682,25 @@ def find(word, slobs, match_prefix=True):
     seen = set()
     if isinstance(slobs, Slob):
         slobs = [slobs]
+
     maxlengths = (None, len(word)) if match_prefix else (None,)
-    for maxlength in maxlengths:
-        for strength in (IDENTICAL, QUATERNARY, TERTIARY, SECONDARY, PRIMARY):
-            for slob in slobs:
-                d = slob.as_dict(strength=strength, maxlength=maxlength)
-                for item in d[word]:
-                    dedup_key = (slob.id, item.key, item.id)
-                    if dedup_key in seen:
-                        continue
-                    else:
-                        seen.add(dedup_key)
-                        yield slob, item
+
+    variants = []
+
+    for strength in (IDENTICAL, QUATERNARY, TERTIARY, SECONDARY, PRIMARY):
+        variants.append((strength, sortkey_length(strength, word)))
+
+    for strength, maxlength in variants:
+        print('variant: ', strength, maxlength)
+        for slob in slobs:
+            d = slob.as_dict(strength=strength, maxlength=maxlength)
+            for item in d[word]:
+                dedup_key = (slob.id, item.key, item.id)
+                if dedup_key in seen:
+                    continue
+                else:
+                    seen.add(dedup_key)
+                    yield slob, item
 
 
 WriterEvent = namedtuple('WriterEvent', 'name data')
