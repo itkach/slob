@@ -687,6 +687,9 @@ def find(word, slobs, match_prefix=True):
     variants = []
 
     for strength in (IDENTICAL, QUATERNARY, TERTIARY, SECONDARY, PRIMARY):
+        variants.append((strength, None))
+
+    for strength in (IDENTICAL, QUATERNARY, TERTIARY, SECONDARY, PRIMARY):
         variants.append((strength, sortkey_length(strength, word)))
 
     for strength, maxlength in variants:
@@ -1330,22 +1333,21 @@ class TestBestMatch(unittest.TestCase):
         with open(self.path1) as s1, \
              open(self.path2) as s2:
             result = find('aa', [s1, s2], match_prefix=True)
-            self.assertEqual(list((s.id, item.key) for s, item in result),
-                             [
-                                 (s1.id, 'aa'),
-                                 (s1.id, 'aa'),
-                                 (s2.id, 'aa'),
-                                 (s1.id, 'a-a'),
-                                 (s2.id, 'a-a'),
-                                 (s2.id, 'a,a'),
-                                 (s1.id, 'Aa'),
-                                 (s2.id, 'aA'),
-                                 (s1.id, 'Äā'),
-                                 (s2.id, 'Äā'),
-                                 (s2.id, 'āā'),
-                                 (s1.id, 'aabc'),
-                                 (s2.id, 'aade'),
-                          ])
+            actual = list((s.id, item.key) for s, item in result)
+            expected = [(s1.id, 'aa'),
+                        (s1.id, 'aa'),
+                        (s2.id, 'aa'),
+                        (s1.id, 'a-a'),
+                        (s2.id, 'a-a'),
+                        (s2.id, 'a,a'),
+                        (s1.id, 'Aa'),
+                        (s2.id, 'aA'),
+                        (s1.id, 'Äā'),
+                        (s2.id, 'Äā'),
+                        (s2.id, 'āā'),
+                        (s1.id, 'aabc'),
+                        (s2.id, 'aade'),]
+            self.assertEqual(expected, actual)
 
     def tearDown(self):
         self.tmpdir.cleanup()
