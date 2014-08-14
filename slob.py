@@ -696,7 +696,7 @@ def find(word, slobs, match_prefix=True):
         for slob in slobs:
             d = slob.as_dict(strength=strength, maxlength=maxlength)
             for item in d[word]:
-                dedup_key = (slob.id, item.key, item.id)
+                dedup_key = (slob.id, item.id, item.fragment)
                 if dedup_key in seen:
                     continue
                 else:
