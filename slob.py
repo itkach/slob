@@ -135,7 +135,6 @@ def sortkey_length(strength, word):
     c.setAttribute(UCollAttribute.ALTERNATE_HANDLING,
                    UCollAttributeValue.SHIFTED)
     coll_key = c.getSortKey(word)
-    print(coll_key)
     return len(coll_key) - 1 #subtract 1 for ending \x00 byte
 
 
@@ -691,7 +690,6 @@ def find(word, slobs, match_prefix=True):
         variants.append((strength, sortkey_length(strength, word)))
 
     for strength, maxlength in variants:
-        print('variant: ', strength, maxlength)
         for slob in slobs:
             d = slob.as_dict(strength=strength, maxlength=maxlength)
             for item in d[word]:
