@@ -117,6 +117,10 @@ class IncorrectFileSize(FileFormatException):
     pass
 
 
+class TagNotFound(Exception):
+    pass
+
+
 @lru_cache(maxsize=None)
 def sortkey(strength, maxlength=None):
     c = Collator.createInstance(Locale(''))
@@ -340,7 +344,13 @@ class StructReader:
         return unpack(U_SHORT, self._file.read(U_SHORT_SIZE))[0]
 
     def _read_text(self, len_spec):
-        return read_byte_string(self._file, len_spec).decode(self.encoding)
+        max_len = 2**(8*calcsize(len_spec)) - 1
+        byte_string = read_byte_string(self._file, len_spec)
+        if len(byte_string) == max_len:
+            terminator = byte_string.find(0)
+            if terminator > -1:
+                byte_string = byte_string[:terminator]
+        return byte_string.decode(self.encoding)
 
     def read_tiny_text(self):
         return self._read_text(U_CHAR)
@@ -370,22 +380,49 @@ class StructWriter:
     def write_short(self, value):
         self._file.write(pack(U_SHORT, value))
 
-    def _write_text(self, text, len_size_spec, encoding=None):
+    def _write_text(self, text, len_size_spec, encoding=None, pad_to_length=None):
         if encoding is None:
             encoding = self.encoding
         text_bytes = text.encode(encoding)
         length = len(text_bytes)
-        self._file.write(pack(len_size_spec, length))
+        self._file.write(
+            pack(len_size_spec,
+                 pad_to_length if pad_to_length else length))
         self._file.write(text_bytes)
+        if pad_to_length:
+            for _ in range(pad_to_length - length):
+                self._file.write(pack(U_CHAR, 0))
 
-    def write_tiny_text(self, text, encoding=None):
-        self._write_text(text, U_CHAR, encoding=encoding)
+    def write_tiny_text(self, text, encoding=None, editable=False):
+        pad_to_length = 255 if editable else None
+        self._write_text(text, U_CHAR,
+                         encoding=encoding,
+                         pad_to_length=pad_to_length)
 
     def write_text(self, text, encoding=None):
         self._write_text(text, U_SHORT, encoding=encoding)
 
     def __getattr__(self, name):
         return getattr(self._file, name)
+
+
+def set_tag_value(path, name, value):
+    with fopen(path, 'rb+') as f:
+        f.seek(len(MAGIC) + 16)
+        encoding = read_byte_string(f, U_CHAR).decode(UTF8)
+        if encodings.search_function(encoding) is None:
+            raise UnknownEncoding(encoding)
+        f = StructWriter(
+            StructReader(f, encoding=encoding),
+            encoding=encoding)
+        f.read_tiny_text()
+        tag_count = f.read_byte()
+        for _ in range(tag_count):
+            key = f.read_tiny_text()
+            if key == name:
+                f.write_tiny_text(value, editable=True)
+                return
+        raise TagNotFound(name)
 
 
 def read_header(f):
@@ -993,7 +1030,7 @@ class Writer(object):
                 f.write(pack(U_CHAR, len(tags)))
                 for key, value in tags.items():
                     f.write_tiny_text(key)
-                    f.write_tiny_text(value)
+                    f.write_tiny_text(value, editable=True)
             write_tags(self.tags, out)
 
             def write_content_types(content_types, f):
@@ -1632,6 +1669,29 @@ class TestTooLongText(unittest.TestCase):
             self.assertTrue('e' in d)
             self.assertFalse(long_alias in d)
             self.assertFalse('g' in d)
+
+
+class TestEditTag(unittest.TestCase):
+
+    def setUp(self):
+        self.tmpdir = tempfile.TemporaryDirectory(prefix='test')
+        self.path = os.path.join(self.tmpdir.name, 'test.slob')
+
+        with create(self.path) as w:
+                w.tag('a', '123456')
+
+    def tearDown(self):
+        self.tmpdir.cleanup()
+
+    def test_edit_existing_tag(self):
+        with open(self.path) as f:
+            self.assertEqual(f.tags['a'], '123456')
+        set_tag_value(self.path, 'a', 'xyz')
+        with open(self.path) as f:
+            self.assertEqual(f.tags['a'], 'xyz')
+
+    def test_edit_nonexisting_tag(self):
+        self.assertRaises(TagNotFound, set_tag_value, self.path, 'b', 'abc')
 
 
 if __name__ == '__main__':
