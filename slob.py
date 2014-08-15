@@ -1,16 +1,16 @@
 #pylint: disable=C0111,C0103,C0302,R0903,R0904,R0914,R0201
+import argparse
 import encodings
+import functools
 import io
 import os
+import pickle
+import random
 import sys
 import tempfile
 import unicodedata
 import unittest
-import functools
-
 import warnings
-import pickle
-import random
 
 from builtins import open as fopen
 from uuid import uuid4, UUID
@@ -406,8 +406,8 @@ class StructWriter:
         return getattr(self._file, name)
 
 
-def set_tag_value(path, name, value):
-    with fopen(path, 'rb+') as f:
+def set_tag_value(filename, name, value):
+    with fopen(filename, 'rb+') as f:
         f.seek(len(MAGIC) + 16)
         encoding = read_byte_string(f, U_CHAR).decode(UTF8)
         if encodings.search_function(encoding) is None:
@@ -812,7 +812,7 @@ class Writer(object):
         self.ref_count = 0
         self.bin_count = 0
         self._tags = {
-            'version.python': sys.version,
+            'version.python': sys.version.replace('\n', ' '),
             'version.pyicu': icu.VERSION,
             'version.icu': icu.ICU_VERSION
         }
@@ -1694,5 +1694,96 @@ class TestEditTag(unittest.TestCase):
         self.assertRaises(TagNotFound, set_tag_value, self.path, 'b', 'abc')
 
 
+def _cli_info(args):
+    from collections import OrderedDict
+    with open(args.path) as s:
+        h = s._header
+        print('\n')
+        info = OrderedDict(
+            (('id', s.id),
+             ('encoding', h.encoding),
+             ('compression', h.compression),
+             ('blob count', s.blob_count),
+             ('ref count', len(s))))
+        _print_title(args.path)
+        _print_dict(info)
+        print('\n')
+        _print_title('CONTENT TYPES')
+        for ct in h.content_types:
+            print(ct)
+        print('\n')
+        _print_title('TAGS')
+        _print_tags(s)
+        print('\n')
+
+def _print_title(title):
+    print(title)
+    print('-'*len(title))
+
+def _cli_tag(args):
+    tag_name = args.name
+    if args.value:
+        try:
+            set_tag_value(args.filename, tag_name, args.value)
+        except TagNotFound:
+            print('No such tag')
+    else:
+        with open(args.filename) as s:
+            _print_tags(s, tag_name)
+
+
+def _print_tags(s, tag_name=None):
+    if tag_name:
+        try:
+            value = s.tags[tag_name]
+        except KeyError:
+            print('No such tag')
+        else:
+            print(value)
+    else:
+        _print_dict(s.tags)
+
+
+def _print_dict(d):
+    max_key_len = 0
+    for k, v in d.items():
+        key_len = len(k)
+        if key_len > max_key_len:
+            max_key_len = key_len
+    fmt_template = '{:>%s}: {}'
+    fmt = fmt_template % max_key_len
+    for k, v in d.items():
+        print(fmt.format(k, v))
+
+
+def _arg_parser():
+    parser = argparse.ArgumentParser()
+
+    subparsers = parser.add_subparsers(help='sub-command')
+    parser_info = subparsers.add_parser(
+        'info',
+        help='Inspect slob and print basic information about it')
+    parser_info.add_argument('path', help='Slob file(s) path')
+    parser_info.set_defaults(func=_cli_info)
+
+    parser_tag = subparsers.add_parser(
+        'tag',
+        help='View or edit slob tags')
+    parser_tag.add_argument('-n', '--name', default='',
+                            help='Name of tag to view or edit')
+    parser_tag.add_argument('-v', '--value',
+                            help='Tag value to set')
+    parser_tag.add_argument('filename',
+                            help='Slob file name (split files are not supported)')
+    parser_tag.set_defaults(func=_cli_tag)
+
+    return parser
+
+
 if __name__ == '__main__':
-    unittest.main()
+    parser = _arg_parser()
+    args = parser.parse_args()
+    if (hasattr(args, 'func')):
+        args.func(args)
+    else:
+        parser.print_help()
