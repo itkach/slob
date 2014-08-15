@@ -719,15 +719,14 @@ def find(word, slobs, match_prefix=True):
     if isinstance(slobs, Slob):
         slobs = [slobs]
 
-    maxlengths = (None, len(word)) if match_prefix else (None,)
-
     variants = []
 
     for strength in (IDENTICAL, QUATERNARY, TERTIARY, SECONDARY, PRIMARY):
         variants.append((strength, None))
 
-    for strength in (IDENTICAL, QUATERNARY, TERTIARY, SECONDARY, PRIMARY):
-        variants.append((strength, sortkey_length(strength, word)))
+    if match_prefix:
+        for strength in (IDENTICAL, QUATERNARY, TERTIARY, SECONDARY, PRIMARY):
+            variants.append((strength, sortkey_length(strength, word)))
 
     for strength, maxlength in variants:
         for slob in slobs:
@@ -1756,14 +1755,55 @@ def _print_dict(d):
         print(fmt.format(k, v))
 
 
+def _cli_find(args):
+    with open(args.path) as s:
+        match_prefix = not args.whole
+        for i, item in enumerate(find(args.query, s,
+                                      match_prefix=match_prefix)):
+            _, blob = item
+            print(blob.id, blob.content_type, blob.key)
+            if i == args.limit:
+                break
+
+
+def _cli_get(args):
+    with open(args.path) as s:
+        _content_type, content = s.get(args.blob_id)
+        sys.stdout.buffer.write(content)
+
+
 def _arg_parser():
     parser = argparse.ArgumentParser()
+    parent = argparse.ArgumentParser(add_help=False)
+    parent.add_argument('path', help='Slob path')
+
+    parents = [parent]
 
     subparsers = parser.add_subparsers(help='sub-command')
+
+    parser_find = subparsers.add_parser('find',
+                                        parents=parents,
+                                        help='Find keys', )
+    parser_find.add_argument('query', help='Word to look up')
+    parser_find.add_argument('--whole', action='store_true',
+                             help='Match whole words only')
+    parser_find.add_argument('-l', '--limit', type=int, default=10,
+                             help='Maximum number of results to display')
+    parser_find.set_defaults(func=_cli_find)
+
+    parser_get = subparsers.add_parser('get',
+                                        parents=parents,
+                                        help='Find keys', )
+    parser_get.add_argument('blob_id',
+                            type=int,
+                            help='Id of blob to retrive (from output of "find")')
+
+    parser_get.set_defaults(func=_cli_get)
+
     parser_info = subparsers.add_parser(
         'info',
+        parents=parents,
         help='Inspect slob and print basic information about it')
-    parser_info.add_argument('path', help='Slob file(s) path')
     parser_info.set_defaults(func=_cli_info)
 
     parser_tag = subparsers.add_parser(
