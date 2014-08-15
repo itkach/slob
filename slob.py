@@ -1793,7 +1793,7 @@ def _arg_parser():
 
     parser_get = subparsers.add_parser('get',
                                         parents=parents,
-                                        help='Find keys', )
+                                        help='Retrieve blob content', )
     parser_get.add_argument('blob_id',
                             type=int,
                             help='Id of blob to retrive (from output of "find")')
@@ -1808,7 +1808,7 @@ def _arg_parser():
 
     parser_tag = subparsers.add_parser(
         'tag',
-        help='View or edit slob tags')
+        help='List tags, view or edit tag value')
     parser_tag.add_argument('-n', '--name', default='',
                             help='Name of tag to view or edit')
     parser_tag.add_argument('-v', '--value',
