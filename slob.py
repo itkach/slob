@@ -12,6 +12,7 @@ import unicodedata
 import unittest
 import warnings
 
+
 from builtins import open as fopen
 from uuid import uuid4, UUID
 from collections.abc import Sequence
@@ -22,6 +23,7 @@ from struct import pack, unpack, calcsize
 from types import MappingProxyType
 from threading import RLock
 from abc import abstractmethod
+from datetime import datetime, timezone
 
 import icu
 
@@ -813,7 +815,8 @@ class Writer(object):
         self._tags = {
             'version.python': sys.version.replace('\n', ' '),
             'version.pyicu': icu.VERSION,
-            'version.icu': icu.ICU_VERSION
+            'version.icu': icu.ICU_VERSION,
+            'created.at': datetime.now(timezone.utc).isoformat()
         }
         self.tags = MappingProxyType(self._tags)
 
