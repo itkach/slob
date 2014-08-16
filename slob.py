@@ -1681,6 +1681,7 @@ class TestEditTag(unittest.TestCase):
         self.path = os.path.join(self.tmpdir.name, 'test.slob')
         with create(self.path) as w:
             w.tag('a', '123456')
+            w.tag('b', '654321')
 
     def tearDown(self):
         self.tmpdir.cleanup()
@@ -1688,12 +1689,15 @@ class TestEditTag(unittest.TestCase):
     def test_edit_existing_tag(self):
         with open(self.path) as f:
             self.assertEqual(f.tags['a'], '123456')
+            self.assertEqual(f.tags['b'], '654321')
+        set_tag_value(self.path, 'b', 'efg')
         set_tag_value(self.path, 'a', 'xyz')
         with open(self.path) as f:
             self.assertEqual(f.tags['a'], 'xyz')
+            self.assertEqual(f.tags['b'], 'efg')
 
     def test_edit_nonexisting_tag(self):
-        self.assertRaises(TagNotFound, set_tag_value, self.path, 'b', 'abc')
+        self.assertRaises(TagNotFound, set_tag_value, self.path, 'z', 'abc')
 
 
 def _cli_info(args):
