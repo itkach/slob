@@ -424,7 +424,8 @@ def set_tag_value(filename, name, value):
             if key == name:
                 f.write_tiny_text(value, editable=True)
                 return
-        raise TagNotFound(name)
+            f.read_tiny_text()
+    raise TagNotFound(name)
 
 
 def read_header(f):
@@ -1678,9 +1679,8 @@ class TestEditTag(unittest.TestCase):
     def setUp(self):
         self.tmpdir = tempfile.TemporaryDirectory(prefix='test')
         self.path = os.path.join(self.tmpdir.name, 'test.slob')
-
         with create(self.path) as w:
-                w.tag('a', '123456')
+            w.tag('a', '123456')
 
     def tearDown(self):
         self.tmpdir.cleanup()
