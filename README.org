@@ -8,7 +8,7 @@
 
 ** Installation
 
-   slob.py depends on the following components:
+   /slob.py/ depends on the following components:
 
    - [[http://python.org][Python]] >= 3.3
    - [[http://icu-project.org][ICU]] >= 4.8
@@ -58,6 +58,66 @@
    wget https://github.com/itkach/slob/archive/master.zip
    pip install master.zip
    #+END_SRC
+
+   Run tests:
+
+   #+BEGIN_SRC sh
+   python -m unittest slob
+   #+END_SRC
+
+** Command line interface
+
+   /slob.py/ provides basic command line interface to inspect slob
+   content and modify tag values.
+
+   #+BEGIN_SRC
+   usage: python -m slob [-h] {find,get,info,tag} ...
+
+   positional arguments:
+     {find,get,info,tag}  sub-command
+       find               Find keys
+       get                Retrieve blob content
+       info               Inspect slob and print basic information about it
+       tag                List tags, view or edit tag value
+
+   optional arguments:
+     -h, --help           show this help message and exit
+   #+END_SRC
+
+   To see basic slob info such as text encoding, compression and tags:
+   #+BEGIN_SRC
+   python -m slob info my.slob
+   #+END_SRC
+
+   To see value of a tag, for example /label/:
+   #+BEGIN_SRC
+   python -m slob tag -n label my.slob
+   #+END_SRC
+
+   To set tag value:
+   #+BEGIN_SRC
+   python -m slob tag -n label -v "A Fine Dictionary" my.slob
+   #+END_SRC
+
+   To look up a key, for example /abc/:
+   #+BEGIN_SRC
+   python -m slob find wordnet-3.0.slob abc
+   #+END_SRC
+
+   The output should like something like
+   #+BEGIN_SRC
+   465 text/html; charset=utf-8 ABC
+   466 text/html; charset=utf-8 abcoulomb
+   472 text/html; charset=utf-8 ABC's
+   468 text/html; charset=utf-8 ABCs
+   #+END_SRC
+
+   First column in the output is blob id. It can be used to retrieve
+   blob content (content bytes are written to stdout):
+   #+BEGIN_SRC
+   python -m slob get wordnet-3.0.slob 465
+   #+END_SRC
+
 
 ** Examples
 
@@ -140,7 +200,7 @@ b'Hello B'
     Note that blob id for the first three keys is the same, they all
     point to the same content item.
 
-    Take a look at tests in slob.py for more examples.
+    Take a look at tests in /slob.py/ for more examples.
 
 *** Slobby - Minimalistic Web UI
 
@@ -235,11 +295,16 @@ b'Hello B'
 
 *** tag
 
-     | Element | Type      |
-     |---------+-----------|
-     | name    | tiny text |
-     | value   | tiny text |
+     | Element | Type                        |
+     |---------+-----------------------------|
+     | name    | tiny text                   |
+     | value   | tiny text padded to maximum |
+     |         | length with null bytes      |
 
+     Tag values are tiny text of length 255, starting with encoded
+     text bytes followed by null bytes. This allowes modifying tag
+     values without having to recompile the whole slob. Null bytes
+     must be stripped before decoding value text.
 
 *** content type
 
