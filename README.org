@@ -210,7 +210,11 @@ b'Hello B'
 
     See http://github.com/itkach/aar2slob/
 
-*** Download Sample Slobs
+*** Aard 2 - Dictionary for Android
+
+    See http://github.com/itkach/aard2-android/
+
+*** Download Content in Slob Format
 
     See https://github.com/itkach/slob/wiki/Dictionaries
 
