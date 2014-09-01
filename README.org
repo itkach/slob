@@ -71,7 +71,7 @@
    content and modify tag values.
 
    #+BEGIN_SRC
-   usage: python -m slob [-h] {find,get,info,tag} ...
+   usage: slob [-h] {find,get,info,tag} ...
 
    positional arguments:
      {find,get,info,tag}  sub-command
@@ -86,22 +86,22 @@
 
    To see basic slob info such as text encoding, compression and tags:
    #+BEGIN_SRC
-   python -m slob info my.slob
+   slob info my.slob
    #+END_SRC
 
    To see value of a tag, for example /label/:
    #+BEGIN_SRC
-   python -m slob tag -n label my.slob
+   slob tag -n label my.slob
    #+END_SRC
 
    To set tag value:
    #+BEGIN_SRC
-   python -m slob tag -n label -v "A Fine Dictionary" my.slob
+   slob tag -n label -v "A Fine Dictionary" my.slob
    #+END_SRC
 
    To look up a key, for example /abc/:
    #+BEGIN_SRC
-   python -m slob find wordnet-3.0.slob abc
+   slob find wordnet-3.0.slob abc
    #+END_SRC
 
    The output should like something like
@@ -115,7 +115,7 @@
    First column in the output is blob id. It can be used to retrieve
    blob content (content bytes are written to stdout):
    #+BEGIN_SRC
-   python -m slob get wordnet-3.0.slob 465
+   slob get wordnet-3.0.slob 465
    #+END_SRC
 
 

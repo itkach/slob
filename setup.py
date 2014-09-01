@@ -7,5 +7,6 @@ setup(name='Slob',
       author_email='itkach@gmail.com',
       url='http://github.com/itkach/slob',
       license='GPL3',
-      py_modules = ['slob'],
-      install_requires=['PyICU >= 1.5'])
+      py_modules=['slob'],
+      install_requires=['PyICU >= 1.5'],
+      entry_points={'console_scripts': ['slob=slob:main']})

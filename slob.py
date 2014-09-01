@@ -1827,10 +1827,14 @@ def _arg_parser():
     return parser
 
 
-if __name__ == '__main__':
+def main():
     parser = _arg_parser()
     args = parser.parse_args()
     if (hasattr(args, 'func')):
         args.func(args)
     else:
         parser.print_help()
+
+
+if __name__ == '__main__':
+    main()
