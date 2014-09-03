@@ -1,5 +1,6 @@
 #pylint: disable=C0111,C0103,C0302,R0903,R0904,R0914,R0201
 import argparse
+import collections
 import encodings
 import functools
 import io
@@ -11,7 +12,6 @@ import tempfile
 import unicodedata
 import unittest
 import warnings
-
 
 from builtins import open as fopen
 from uuid import uuid4, UUID
@@ -1779,6 +1779,53 @@ def _cli_get(args):
         sys.stdout.buffer.write(content)
 
 
+def _cli_convert(args):
+    import sys
+    import time
+    t0 = time.time()
+
+    with open(args.path) as s:
+        workdir = args.workdir
+        encoding = args.encoding or s._header.encoding
+        compression = args.compression or s._header.compression
+        min_bin_size = 1024*args.min_bin_size
+
+    with create(args.output,
+                workdir=workdir,
+                encoding=encoding,
+                compression=compression,
+                min_bin_size=min_bin_size) as w:
+
+        blob_to_refs = collections.OrderedDict()
+        print('Mapping blobs to keys...')
+        key_count = 0
+        with open(args.path) as s:
+            for i, item in enumerate(s):
+                blob_to_refs.setdefault(item.id, []).append(i)
+                key_count += 1
+        print('Found {} keys for {} blobs'.format(key_count, len(blob_to_refs)))
+
+        with open(args.path) as s:
+            for name, value in s.tags.items():
+                if not name in w.tags:
+                    w.tag(name, value)
+            blob_count = len(blob_to_refs)
+            for j, blob_id in enumerate(blob_to_refs):
+                if j % 100 == 0 and j != 0:
+                    sys.stdout.write('.')
+                    if j and j % 5000 == 0:
+                        sys.stdout.write(
+                            ' {0:.2f}%\n'.format(100*(j/blob_count)))
+                    sys.stdout.flush()
+                content_type, content = s.get(blob_id)
+                keys = []
+                for i in blob_to_refs[blob_id]:
+                    ref = s._refs[i]
+                    keys.append((ref.key, ref.fragment))
+                w.add(content, *keys, content_type=content_type)
+    print('\nDone in {0:.2f}s'.format(time.time() - t0))
+
+
 def _arg_parser():
     parser = argparse.ArgumentParser()
     parent = argparse.ArgumentParser(add_help=False)
@@ -1823,6 +1870,33 @@ def _arg_parser():
     parser_tag.add_argument('filename',
                             help='Slob file name (split files are not supported)')
     parser_tag.set_defaults(func=_cli_tag)
+
+    parser_convert = subparsers.add_parser(
+        'convert',
+        parents=parents,
+        help=('Create new slob with the same convent '
+              'but different encoding and compression parameters'))
+    parser_convert.add_argument('output',
+                                help='Name of slob file to create')
+
+    parser_convert.add_argument('--workdir',
+                                help='Directory where temporary files for '
+                                'conversion should be created')
+
+    parser_convert.add_argument('-e', '--encoding',
+                                help=('Text encoding for the output slob. '
+                                      'Default: same as source'))
+
+    parser_convert.add_argument('-c', '--compression',
+                                help=('Compression algorithm to use fot the output slob. '
+                                      'Default: same as source'))
+
+    parser_convert.add_argument('-b', '--min_bin_size', type=int,
+                                help=('Minimum size of storage bin to compress in kilobytes. '
+                                      'Default: %(default)s'),
+                                default=384)
+
+    parser_convert.set_defaults(func=_cli_convert)
 
     return parser
 

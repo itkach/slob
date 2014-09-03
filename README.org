@@ -67,8 +67,8 @@
 
 ** Command line interface
 
-   /slob.py/ provides basic command line interface to inspect slob
-   content and modify tag values.
+   /slob.py/ provides basic command line interface to inspect
+   and modify slob content.
 
    #+BEGIN_SRC
    usage: slob [-h] {find,get,info,tag} ...
@@ -79,6 +79,8 @@
        get                Retrieve blob content
        info               Inspect slob and print basic information about it
        tag                List tags, view or edit tag value
+       convert            Create new slob with the same convent but different
+                          encoding and compression parameters
 
    optional arguments:
      -h, --help           show this help message and exit
@@ -116,6 +118,12 @@
    blob content (content bytes are written to stdout):
    #+BEGIN_SRC
    slob get wordnet-3.0.slob 465
+   #+END_SRC
+
+   To re-encode or re-compress slob content with different
+   parameters:
+   #+BEGIN_SRC
+   slob convert -c lzma2 -b 256 simplewiki-20140209.zlib.384k.slob simplewiki-20140209.lzma2.256k.slob
    #+END_SRC
 
 
