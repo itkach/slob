@@ -724,11 +724,11 @@ def find(word, slobs, match_prefix=True):
 
     variants = []
 
-    for strength in (IDENTICAL, QUATERNARY, TERTIARY, SECONDARY, PRIMARY):
+    for strength in (QUATERNARY, TERTIARY, SECONDARY, PRIMARY):
         variants.append((strength, None))
 
     if match_prefix:
-        for strength in (IDENTICAL, QUATERNARY, TERTIARY, SECONDARY, PRIMARY):
+        for strength in (QUATERNARY, TERTIARY, SECONDARY, PRIMARY):
             variants.append((strength, sortkey_length(strength, word)))
 
     for strength, maxlength in variants:
