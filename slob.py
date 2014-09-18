@@ -528,12 +528,24 @@ class Slob(Sequence):
         return self._header.uuid.hex
 
     @property
+    def content_types(self):
+        return self._header.content_types
+
+    @property
     def tags(self):
         return self._header.tags
 
     @property
     def blob_count(self):
         return self._header.blob_count
+
+    @property
+    def compression(self):
+        return self._header.compression
+
+    @property
+    def encoding(self):
+        return self._header.encoding
 
     def __len__(self):
         return len(self._refs)
