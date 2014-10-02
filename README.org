@@ -14,20 +14,26 @@
    - [[http://icu-project.org][ICU]] >= 4.8
    - [[https://pypi.python.org/pypi/PyICU][PyICU]] >= 1.5
 
+   In addition, the following components are needed to set up
+   slob environment:
+
+   - [[http://git-scm.com/][git]]
+   - [[https://virtualenv.pypa.io/][virtualenv]]
+
    Consult your operating system documentation and these component's
    websites for installation instructions.
 
-   For example, on Ubuntu 13.10, the following command installs
+   For example, on Ubuntu 14.04, the following command installs
    required packages:
 
    #+BEGIN_SRC sh
-   sudo apt-get install python3.3 python3-icu
+   sudo apt-get install python3 python3-icu python-virtualenv git
    #+END_SRC
 
    Create new Python virtual environment:
 
    #+BEGIN_SRC sh
-   python3 -m venv env-slob --system-site-packages
+   virtualenv env-slob -p python3 --system-site-packages
    #+END_SRC
 
    Activate it:
@@ -36,17 +42,7 @@
    source env-slob/bin/activate
    #+END_SRC
 
-   See also http://docs.python.org/3/library/venv.html
-
-   Install [[http://www.pip-installer.org/][pip]]:
-
-   #+BEGIN_SRC sh
-   curl https://bitbucket.org/pypa/setuptools/raw/bootstrap/ez_setup.py | python
-   curl https://raw.github.com/pypa/pip/master/contrib/get-pip.py | python
-   source env-slob/bin/activate
-   #+END_SRC
-
-   Install from source code repository ([[http://git-scm.com/][git]] needs to be installed):
+   Install from source code repository:
 
    #+BEGIN_SRC sh
    pip install git+https://github.com/itkach/slob.git
