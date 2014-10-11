@@ -285,10 +285,12 @@ class KeydItemDict(object):
 
 class Blob(object):
 
-    def __init__(self, content_id, key, fragment, read_func):
+    def __init__(self, content_id, key, fragment,
+                 read_content_type_func, read_func):
         self._content_id = content_id
         self._key = key
         self._fragment = fragment
+        self._read_content_type = read_content_type_func
         self._read = read_func
 
     @property
@@ -305,11 +307,11 @@ class Blob(object):
 
     @property
     def content_type(self):
-        return self._read()[0]
+        return self._read_content_type()
 
     @property
     def content(self):
-        return self._read()[1]
+        return self._read()
 
     def __str__(self):
         return self.key
@@ -552,11 +554,17 @@ class Slob(Sequence):
 
     def __getitem__(self, i):
         ref = self._refs[i]
-        read_func = lru_cache(maxsize=None)(functools.partial(self._store.get,
-                                                              ref.bin_index,
-                                                              ref.item_index))
+
+        def read_func():
+            return self._store.get(ref.bin_index, ref.item_index)[1]
+        read_func = lru_cache(maxsize=None)(read_func)
+
+        def read_content_type_func():
+            return self._store.content_type(ref.bin_index, ref.item_index)
+
         content_id = meld_ints(ref.bin_index, ref.item_index)
-        return Blob(content_id, ref.key, ref.fragment, read_func)
+        return Blob(content_id, ref.key, ref.fragment,
+                    read_content_type_func, read_func)
 
     def get(self, blob_id):
         bin_index, bin_item_index = unmeld_ints(blob_id)
@@ -598,25 +606,31 @@ def create(*args, **kwargs):
 class BinMemWriter:
 
     def __init__(self):
+        self.content_type_ids = []
         self.item_dir = []
         self.items = []
         self.current_offset = 0
 
     def add(self, content_type_id, blob):
+        self.content_type_ids.append(content_type_id)
         self.item_dir.append(pack(U_INT, self.current_offset))
-        type_length_and_bytes = (pack(U_CHAR, content_type_id) +
-                                 pack(U_INT, len(blob)) + blob)
-        self.items.append(type_length_and_bytes)
-        self.current_offset += len(type_length_and_bytes)
+        length_and_bytes = pack(U_INT, len(blob)) + blob
+        self.items.append(length_and_bytes)
+        self.current_offset += len(length_and_bytes)
 
     def __len__(self):
         return len(self.item_dir)
 
     def finalize(self, fout: 'output file', compress: 'function'):
-        content = b''.join([pack(U_INT, len(self))]+self.item_dir + self.items)
+        count = len(self)
+        fout.write(pack(U_INT, count))
+        for content_type_id in self.content_type_ids:
+            fout.write(pack(U_CHAR, content_type_id))
+        content = b''.join(self.item_dir + self.items)
         compressed = compress(content)
         fout.write(pack(U_INT, len(compressed)))
         fout.write(compressed)
+        self.content_type_ids.clear()
         self.item_dir.clear()
         self.items.clear()
 
@@ -693,17 +707,19 @@ class RefList(ItemList):
 
 class Bin(ItemList):
 
-    def __init__(self, bin_bytes):
+    def __init__(self, count, bin_bytes):
         super().__init__(StructReader(io.BytesIO(bin_bytes)),
                          0,
-                         U_INT,
+                         count,
                          U_INT)
 
     def _read_item(self):
-        content_type_id = self._file.read_byte()
         content_len = self._file.read_int()
         content = self._file.read(content_len)
-        return content_type_id, content
+        return content
+
+
+StoreItem = namedtuple('StoreItem', 'content_type_ids compressed_content')
 
 
 class Store(ItemList):
@@ -718,14 +734,32 @@ class Store(ItemList):
         self.content_types = content_types
 
     def _read_item(self):
-        compressed_length = self._file.read_int()
-        compressed = self._file.read(compressed_length)
-        bin_bytes = self.decompress(compressed)
-        return Bin(bin_bytes)
+        bin_item_count = self._file.read_int()
+        packed_content_type_ids = self._file.read(bin_item_count*U_CHAR_SIZE)
+        content_type_ids = []
+        for i in range(bin_item_count):
+            content_type_id = unpack(U_CHAR, packed_content_type_ids[i:i+1])[0]
+            content_type_ids.append(content_type_id)
+        content_length = self._file.read_int()
+        content = self._file.read(content_length)
+        return StoreItem(content_type_ids=content_type_ids,
+                         compressed_content=content)
+
+    def _content_type(self, bin_index, item_index):
+        store_item = self[bin_index]
+        content_type_id = store_item.content_type_ids[item_index]
+        content_type = self.content_types[content_type_id]
+        return content_type, store_item
+
+    def content_type(self, bin_index, item_index):
+        return self._content_type(bin_index, item_index)[0]
 
     def get(self, bin_index, item_index):
-        content_type_id, content = self[bin_index][item_index]
-        content_type = self.content_types[content_type_id]
+        content_type, store_item = self._content_type(bin_index, item_index)
+        content = self.decompress(store_item.compressed_content)
+        count = len(store_item.content_type_ids)
+        store_bin = Bin(count, content)
+        content = store_bin[item_index]
         return (content_type, content)
 
 
