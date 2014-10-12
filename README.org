@@ -307,21 +307,21 @@ b'Hello B'
 
 
 *** store item
-     | Element          | Type                                       | Description                                          |
-     |------------------+--------------------------------------------+------------------------------------------------------|
-     | content type ids | int-sized sequence of bytes                | Each byte is a char representing content type id.    |
-     | storage bin      | list of int-positioned items without count | Storage bin doesn't include leading int that         |
-     |                  |                                            | would represent item count - item count equals       |
-     |                  |                                            | the length of content type ids. Items in the storage |
-     |                  |                                            | bin are large byte strings - actual content bytes.   |
+     | Element          | Type                                                    | Description                                       |
+     |------------------+---------------------------------------------------------+---------------------------------------------------|
+     | content type ids | int-sized sequence of bytes                             | Each byte is a char representing content type id. |
+     | storage bin      | list of int-positioned large byte strings without count | Content                                           |
+
+Storage bin doesn't include leading int that would represent item
+count - item count equals the length of content type ids. Items in the
+storage bin are large byte strings - actual content bytes.
 
 *** list of /position type/-positioned /items/
 
-     | Element   | Type                                                        | Description                                                    |
-     |-----------+-------------------------------------------------------------+----------------------------------------------------------------|
-     | positions | int-sized sequence of item offsets of type /position type/. | Item offset specifies position in file where item data starts, |
-     |           |                                                             | relative to the end of position data                           |
-     | items     | sequence of /items/                                         |                                                                |
+     | Element   | Type                                                        | Description                                                                                         |
+     |-----------+-------------------------------------------------------------+-----------------------------------------------------------------------------------------------------|
+     | positions | int-sized sequence of item offsets of type /position type/. | Item offset specifies position in file where item data starts, relative to the end of position data |
+     | items     | sequence of /items/                                         |                                                                                                     |
 
 *** char
     unsigned char (1 byte)
