@@ -227,38 +227,35 @@ b'Hello B'
 
 *** Slob
 
-| Element       | Type                                 | Description                                                                                 |
-|---------------+--------------------------------------+---------------------------------------------------------------------------------------------|
-| magic         | fixed size sequence of 8 bytes       | Bytes ~21 2d 31 53 4c 4f 42 1f~: string ~!-1SLOB~ followed                                  |
-|               |                                      | by ascii unit separator (ascii hex code ~1f~) identifying slob format                       |
-|---------------+--------------------------------------+---------------------------------------------------------------------------------------------|
-| uuid          | fixed size sequence of 16 bytes      | unique slob identifier ([[https://tools.ietf.org/html/rfc4122][RFC 4122]] UUID)                                                      |
-|---------------+--------------------------------------+---------------------------------------------------------------------------------------------|
-| encoding      | tiny text (utf8)                     | Name of text encoding used for all other text elements:                                     |
-|               |                                      | tag names and values, content types, keys, fragments                                        |
-|---------------+--------------------------------------+---------------------------------------------------------------------------------------------|
-| compression   | tiny text                            | Name of compression algorithm used to compress storage bins.                                |
-|               |                                      | slob.py understands following names: /bz2/, /zlib/ which correspond to Python module names, |
-|               |                                      | and /lzma2/ which refers to raw lzma2 compression with custom filter (this is default).     |
-|               |                                      | Empty value means bins are not compressed.                                                  |
-|               |                                      | Additional compression algorithms can be registered.                                        |
-|---------------+--------------------------------------+---------------------------------------------------------------------------------------------|
-| tags          | char-sized sequence of tags          | Tags are text key-value pairs that may provide additional                                   |
-|               |                                      | information about slob or its data.                                                         |
-|---------------+--------------------------------------+---------------------------------------------------------------------------------------------|
-| content types | char-sized sequence of content types | MIME content types. Content items refer to content types by id.                             |
-|               |                                      | Content type id is 0-based position of content type in this sequence.                       |
-|---------------+--------------------------------------+---------------------------------------------------------------------------------------------|
-| blob count    | int                                  | Number of content items stored in the slob                                                  |
-|---------------+--------------------------------------+---------------------------------------------------------------------------------------------|
-| store offset  | long                                 | File position at which store data begins                                                    |
-|---------------+--------------------------------------+---------------------------------------------------------------------------------------------|
-| size          | long                                 | Total file byte size (or sum of all files if slob is split into multiple files)             |
-|---------------+--------------------------------------+---------------------------------------------------------------------------------------------|
-| refs          | list of long-positioned refs         | References to content                                                                       |
-|---------------+--------------------------------------+---------------------------------------------------------------------------------------------|
-| store         | list of long-positioned store items  | Store item contains number of items stored, content type id                                 |
-|               |                                      | for each item and storage bin with each item's content                                      |
+| Element       | Type                                 | Description                                                                                                                                                                        |
+|---------------+--------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| magic         | fixed size sequence of 8 bytes       | Bytes ~21 2d 31 53 4c 4f 42 1f~: string ~!-1SLOB~ followed                                                                                                                         |
+|               |                                      | by ascii unit separator (ascii hex code ~1f~) identifying slob format                                                                                                              |
+|---------------+--------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| uuid          | fixed size sequence of 16 bytes      | Unique slob identifier ([[https://tools.ietf.org/html/rfc4122][RFC 4122]] UUID)                                                                                                                                             |
+|---------------+--------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| encoding      | tiny text (utf8)                     | Name of text encoding used for all other text elements:                                                                                                                            |
+|               |                                      | tag names and values, content types, keys, fragments                                                                                                                               |
+|---------------+--------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| compression   | tiny text                            | Name of compression algorithm used to compress storage bins.                                                                                                                       |
+|               |                                      | slob.py understands following names: /bz2/, /zlib/ which correspond to Python module names, and /lzma2/ which refers to raw lzma2 compression with LZMA2 filter (this is default). |
+|               |                                      | Empty value means bins are not compressed.                                                                                                                                         |
+|---------------+--------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| tags          | char-sized sequence of tags          | Tags are text key-value pairs that may provide additional                                                                                                                          |
+|               |                                      | information about slob or its data.                                                                                                                                                |
+|---------------+--------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| content types | char-sized sequence of content types | MIME content types. Content items refer to content types by id.                                                                                                                    |
+|               |                                      | Content type id is 0-based position of content type in this sequence.                                                                                                              |
+|---------------+--------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| blob count    | int                                  | Number of content items stored in the slob                                                                                                                                         |
+|---------------+--------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| store offset  | long                                 | File position at which store data begins                                                                                                                                           |
+|---------------+--------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| size          | long                                 | Total file byte size (or sum of all files if slob is split into multiple files)                                                                                                    |
+|---------------+--------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| refs          | list of long-positioned refs         | References to content                                                                                                                                                              |
+|---------------+--------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| store         | list of long-positioned store items  | Store item contains number of items stored, content type id for each item and storage bin with each item's content                                                                 |
 
 
 
