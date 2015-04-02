@@ -1932,6 +1932,8 @@ def _cli_convert(args):
                 current_size = (size_header_and_tags +
                                 w.size_content_types() +
                                 w.size_data())
+            print('\nDone adding content in {0:.2f}s'.format(time.time() - t1))
+            print('Finalizing...')
     print('\nDone in {0:.2f}s'.format(time.time() - t0))
 
 
