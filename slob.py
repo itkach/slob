@@ -754,9 +754,14 @@ class Store(ItemList):
     def content_type(self, bin_index, item_index):
         return self._content_type(bin_index, item_index)[0]
 
+    @lru_cache(maxsize=16)
+    def _decompress(self, bin_index):
+        store_item = self[bin_index]
+        return self.decompress(store_item.compressed_content)
+
     def get(self, bin_index, item_index):
         content_type, store_item = self._content_type(bin_index, item_index)
-        content = self.decompress(store_item.compressed_content)
+        content = self._decompress(bin_index)
         count = len(store_item.content_type_ids)
         store_bin = Bin(count, content)
         content = store_bin[item_index]
