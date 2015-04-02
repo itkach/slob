@@ -1899,12 +1899,13 @@ def _cli_convert(args):
         print('Mapping blobs to keys...')
         blob_to_refs = collections.OrderedDict()
         key_count = 0
-        pp = functools.partial(_p, step=10000, fmt=' {0:d}%\n')
+        pp = functools.partial(_p, step=10000, fmt=' {:.2f}%/{:.2f}s\n')
         with open(args.path) as s:
+            total_keys = len(s)
             for i, item in enumerate(s):
                 blob_to_refs.setdefault(item.id, []).append(i)
                 key_count += 1
-                pp(i, key_count)
+                pp(i, 100*key_count/total_keys, time.time() - t0)
 
         print('\nFound {} keys for {} blobs in {:.2f}s'
               .format(key_count, len(blob_to_refs), time.time() - t0))
