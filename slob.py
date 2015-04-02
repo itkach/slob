@@ -1132,6 +1132,46 @@ class Writer(object):
         self._fire_event('end_finalize')
 
 
+    def size_header(self):
+        size = 0
+        size += len(MAGIC)
+        size += 16 # uuid bytes
+        size += U_CHAR_SIZE + len(self.encoding.encode(UTF8))
+        size += U_CHAR_SIZE + len(self.compression.encode(self.encoding))
+
+        size += U_CHAR_SIZE # tag length
+        size += U_CHAR_SIZE # content types count
+
+        #tags and content types themselves counted elsewhere
+
+        size += U_INT_SIZE #blob count
+        size += U_LONG_LONG_SIZE #store offset
+        size += U_LONG_LONG_SIZE # file size
+        size += U_INT_SIZE # ref count
+        size += U_INT_SIZE # bin count
+
+        return size
+
+    def size_tags(self):
+        size = 0
+        for key, _ in self.tags.items():
+            size += U_CHAR_SIZE + len(key.encode(self.encoding))
+            size += 255
+        return size
+
+    def size_content_types(self):
+        size = 0
+        for content_type in self.content_types:
+            size += U_CHAR_SIZE + len(content_type.encode(self.encoding))
+        return size
+
+    def size_data(self):
+        files = (self.f_ref_positions,
+                 self.f_refs,
+                 self.f_store_positions,
+                 self.f_store)
+        return sum((os.stat(f.name).st_size for f in files))
+
     def  __enter__(self):
         return self
 
@@ -1825,6 +1865,15 @@ def _cli_get(args):
         sys.stdout.buffer.write(content)
 
 
+def _p(i, *args, step=100, steps_per_line=50, fmt='{}'):
+    line = steps_per_line*step
+    if i % step == 0 and i != 0:
+        sys.stdout.write('.')
+        if i and i % line == 0:
+            sys.stdout.write(fmt.format(*args))
+        sys.stdout.flush()
+
+
 def _cli_convert(args):
     import sys
     import time
@@ -1842,33 +1891,41 @@ def _cli_convert(args):
                 compression=compression,
                 min_bin_size=min_bin_size) as w:
 
-        blob_to_refs = collections.OrderedDict()
         print('Mapping blobs to keys...')
+        blob_to_refs = collections.OrderedDict()
         key_count = 0
+        pp = functools.partial(_p, step=10000, fmt=' {0:d}%\n')
         with open(args.path) as s:
             for i, item in enumerate(s):
                 blob_to_refs.setdefault(item.id, []).append(i)
                 key_count += 1
-        print('Found {} keys for {} blobs'.format(key_count, len(blob_to_refs)))
+                pp(i, key_count)
 
+        print('\nFound {} keys for {} blobs in {:.2f}s'
+              .format(key_count, len(blob_to_refs), time.time() - t0))
+
+        print('Converting...')
+        Mb = 1024*1024.0
+        pp = functools.partial(_p, step=100, fmt=' {:.2f}%/{:.2f}Mb/{:.2f}s\n')
         with open(args.path) as s:
+            t1 = time.time()
             for name, value in s.tags.items():
                 if not name in w.tags:
                     w.tag(name, value)
+            size_header_and_tags = w.size_header() + w.size_tags()
             blob_count = len(blob_to_refs)
+            current_size = 0
             for j, blob_id in enumerate(blob_to_refs):
-                if j % 100 == 0 and j != 0:
-                    sys.stdout.write('.')
-                    if j and j % 5000 == 0:
-                        sys.stdout.write(
-                            ' {0:.2f}%\n'.format(100*(j/blob_count)))
-                    sys.stdout.flush()
+                pp(j, 100*(j/blob_count), current_size/Mb, time.time() - t1)
                 content_type, content = s.get(blob_id)
                 keys = []
                 for i in blob_to_refs[blob_id]:
                     ref = s._refs[i]
                     keys.append((ref.key, ref.fragment))
                 w.add(content, *keys, content_type=content_type)
+                current_size = (size_header_and_tags +
+                                w.size_content_types() +
+                                w.size_data())
     print('\nDone in {0:.2f}s'.format(time.time() - t0))
 
 
