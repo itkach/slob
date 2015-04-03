@@ -1884,6 +1884,28 @@ def _cli_convert(args):
     import time
     t0 = time.time()
 
+    output_name = args.output
+
+    output_dir = os.path.dirname(output_name)
+    output_base = os.path.basename(output_name)
+    output_base_noext, output_base_ext = os.path.splitext(output_base)
+
+    DOT_SLOB = '.slob'
+
+    if output_base_ext != DOT_SLOB:
+        output_base = output_base + DOT_SLOB
+        output_base_noext, output_base_ext = os.path.splitext(output_base)
+
+    if args.split:
+        output_dir = os.path.join(output_dir, output_base)
+        if os.path.exists(output_dir):
+            raise SystemExit('%r already exists' % output_dir)
+        os.mkdir(output_dir)
+    else:
+        output_name = os.path.join(output_dir, output_base)
+        if os.path.exists(output_name):
+            raise SystemExit('%r already exists' % output_name)
+
     with open(args.path) as s:
         workdir = args.workdir
         encoding = args.encoding or s._header.encoding
@@ -1891,51 +1913,73 @@ def _cli_convert(args):
                        if args.compression is None
                        else args.compression)
         min_bin_size = 1024*args.min_bin_size
-
-    with create(args.output,
-                workdir=workdir,
-                encoding=encoding,
-                compression=compression,
-                min_bin_size=min_bin_size) as w:
+        split = 1024*1024*args.split
 
         print('Mapping blobs to keys...')
         blob_to_refs = collections.OrderedDict()
         key_count = 0
         pp = functools.partial(_p, step=10000, fmt=' {:.2f}%/{:.2f}s\n')
-        with open(args.path) as s:
-            total_keys = len(s)
-            for i, item in enumerate(s):
-                blob_to_refs.setdefault(item.id, []).append(i)
-                key_count += 1
-                pp(i, 100*key_count/total_keys, time.time() - t0)
+        total_keys = len(s)
+        for i, item in enumerate(s):
+            blob_to_refs.setdefault(item.id, []).append(i)
+            key_count += 1
+            pp(i, 100*key_count/total_keys, time.time() - t0)
 
         print('\nFound {} keys for {} blobs in {:.2f}s'
               .format(key_count, len(blob_to_refs), time.time() - t0))
 
         print('Converting...')
-        Mb = 1024*1024.0
+        Mb = 1024*1024
         pp = functools.partial(_p, step=100, fmt=' {:.2f}%/{:.2f}Mb/{:.2f}s\n')
-        with open(args.path) as s:
-            t1 = time.time()
+
+        def mkout(output):
+            w = create(output,
+                       workdir=workdir,
+                       encoding=encoding,
+                       compression=compression,
+                       min_bin_size=min_bin_size)
             for name, value in s.tags.items():
                 if not name in w.tags:
                     w.tag(name, value)
             size_header_and_tags = w.size_header() + w.size_tags()
-            blob_count = len(blob_to_refs)
-            current_size = 0
-            for j, blob_id in enumerate(blob_to_refs):
-                pp(j, 100*(j/blob_count), current_size/Mb, time.time() - t1)
-                content_type, content = s.get(blob_id)
-                keys = []
-                for i in blob_to_refs[blob_id]:
-                    ref = s._refs[i]
-                    keys.append((ref.key, ref.fragment))
-                w.add(content, *keys, content_type=content_type)
-                current_size = (size_header_and_tags +
-                                w.size_content_types() +
-                                w.size_data())
-            print('\nDone adding content in {0:.2f}s'.format(time.time() - t1))
+            return w, size_header_and_tags
+
+        def fin(t1, w, current_output):
+            print('\nDone adding content to {1} in {0:.2f}s'.format(time.time() - t1, current_output))
             print('Finalizing...')
+            w.finalize()
+            return time.time(), None, 0
+
+        t1, w, size_header_and_tags = time.time(), None, 0
+        current_size = 0
+        blob_count = len(blob_to_refs)
+        volume_count = 0
+        current_output = output_name
+        for j, blob_id in enumerate(blob_to_refs):
+            pp(j, 100*(j/blob_count), current_size/Mb, time.time() - t1)
+            content_type, content = s.get(blob_id)
+            keys = []
+            for i in blob_to_refs[blob_id]:
+                ref = s._refs[i]
+                keys.append((ref.key, ref.fragment))
+            if w is None:
+                volume_count += 1
+                if split:
+                    current_output = os.path.join(
+                        output_dir,
+                        ''.join((output_base_noext,
+                                 '-{:02d}'.format(volume_count),
+                                 output_base_ext)))
+                w, size_header_and_tags = mkout(current_output)
+            w.add(content, *keys, content_type=content_type)
+            current_size = (size_header_and_tags +
+                            w.size_content_types() +
+                            w.size_data())
+            if split and current_size + min_bin_size >= split:
+                t1, w, size_header_and_tags = fin(t1, w, current_output)
+        if w:
+            fin(t1, w, current_output)
+
     print('\nDone in {0:.2f}s'.format(time.time() - t0))
 
 
@@ -2008,6 +2052,12 @@ def _arg_parser():
                                 help=('Minimum size of storage bin to compress in kilobytes. '
                                       'Default: %(default)s'),
                                 default=384)
+
+    parser_convert.add_argument('-s', '--split', type=int,
+                                help=('Split output into multiple slob files no larger '
+                                      'than specified number of megabytes. '
+                                      'Default: %(default)s (do not split)'),
+                                default=0)
 
     parser_convert.set_defaults(func=_cli_convert)
 
