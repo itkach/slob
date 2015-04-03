@@ -1887,7 +1887,9 @@ def _cli_convert(args):
     with open(args.path) as s:
         workdir = args.workdir
         encoding = args.encoding or s._header.encoding
-        compression = args.compression or s._header.compression
+        compression = (s._header.compression
+                       if args.compression is None
+                       else args.compression)
         min_bin_size = 1024*args.min_bin_size
 
     with create(args.output,
