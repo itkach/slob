@@ -1,5 +1,6 @@
 #pylint: disable=C0111,C0103,C0302,R0903,R0904,R0914,R0201
 import argparse
+import array
 import collections
 import encodings
 import functools
@@ -1916,17 +1917,19 @@ def _cli_convert(args):
         split = 1024*1024*args.split
 
         print('Mapping blobs to keys...')
-        blob_to_refs = collections.OrderedDict()
+        blob_to_refs = [collections.defaultdict(lambda: array.array('L'))
+                        for i in range(len(s._store))]
         key_count = 0
         pp = functools.partial(_p, step=10000, fmt=' {:.2f}%/{:.2f}s\n')
         total_keys = len(s)
-        for i, item in enumerate(s):
-            blob_to_refs.setdefault(item.id, []).append(i)
+        blob_count = s.blob_count
+        for i, ref in enumerate(s._refs):
+            blob_to_refs[ref.bin_index][ref.item_index].append(i)
             key_count += 1
             pp(i, 100*key_count/total_keys, time.time() - t0)
 
         print('\nFound {} keys for {} blobs in {:.2f}s'
-              .format(key_count, len(blob_to_refs), time.time() - t0))
+              .format(key_count, blob_count, time.time() - t0))
 
         print('Converting...')
         Mb = 1024*1024
@@ -1945,38 +1948,43 @@ def _cli_convert(args):
             return w, size_header_and_tags
 
         def fin(t1, w, current_output):
-            print('\nDone adding content to {1} in {0:.2f}s'.format(time.time() - t1, current_output))
+            print('\nDone adding content to {1} in {0:.2f}s'
+                  .format(time.time() - t1, current_output))
             print('Finalizing...')
             w.finalize()
             return time.time(), None, 0
 
         t1, w, size_header_and_tags = time.time(), None, 0
         current_size = 0
-        blob_count = len(blob_to_refs)
         volume_count = 0
         current_output = output_name
-        for j, blob_id in enumerate(blob_to_refs):
-            pp(j, 100*(j/blob_count), current_size/Mb, time.time() - t1)
-            content_type, content = s.get(blob_id)
-            keys = []
-            for i in blob_to_refs[blob_id]:
-                ref = s._refs[i]
-                keys.append((ref.key, ref.fragment))
-            if w is None:
-                volume_count += 1
-                if split:
-                    current_output = os.path.join(
-                        output_dir,
-                        ''.join((output_base_noext,
-                                 '-{:02d}'.format(volume_count),
-                                 output_base_ext)))
-                w, size_header_and_tags = mkout(current_output)
-            w.add(content, *keys, content_type=content_type)
-            current_size = (size_header_and_tags +
-                            w.size_content_types() +
-                            w.size_data())
-            if split and current_size + min_bin_size >= split:
-                t1, w, size_header_and_tags = fin(t1, w, current_output)
+        current = 0
+        for j, store_item in enumerate(s._store):
+            for i in range(len(store_item.content_type_ids)):
+                bin_index = j
+                item_index = i
+                current += 1
+                content_type, content = s._store.get(bin_index, item_index)
+                pp(current, 100*(current/blob_count), current_size/Mb, time.time() - t1)
+                keys = []
+                for k in blob_to_refs[bin_index][item_index]:
+                    ref = s._refs[k]
+                    keys.append((ref.key, ref.fragment))
+                if w is None:
+                    volume_count += 1
+                    if split:
+                        current_output = os.path.join(
+                            output_dir,
+                            ''.join((output_base_noext,
+                                     '-{:02d}'.format(volume_count),
+                                     output_base_ext)))
+                    w, size_header_and_tags = mkout(current_output)
+                w.add(content, *keys, content_type=content_type)
+                current_size = (size_header_and_tags +
+                                w.size_content_types() +
+                                w.size_data())
+                if split and current_size + min_bin_size >= split:
+                    t1, w, size_header_and_tags = fin(t1, w, current_output)
         if w:
             fin(t1, w, current_output)
 
