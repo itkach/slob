@@ -1914,7 +1914,7 @@ def _cli_convert(args):
                        if args.compression is None
                        else args.compression)
         min_bin_size = 1024*args.min_bin_size
-        split = 1024*1024*args.split
+        split = 1024*1024*args.split - 1
 
         print('Mapping blobs to keys...')
         blob_to_refs = [collections.defaultdict(lambda: array.array('L'))
