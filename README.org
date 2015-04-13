@@ -77,6 +77,7 @@
        tag                List tags, view or edit tag value
        convert            Create new slob with the same convent but different
                           encoding and compression parameters
+                          or split into multiple slobs
 
    optional arguments:
      -h, --help           show this help message and exit
@@ -121,6 +122,22 @@
    #+BEGIN_SRC
    slob convert -c lzma2 -b 256 simplewiki-20140209.zlib.384k.slob simplewiki-20140209.lzma2.256k.slob
    #+END_SRC
+
+   To split into multiple slobs:
+
+   #+BEGIN_SRC
+   slob convert --split 4096 enwiki-20150406.slob enwiki-20150406-vol.slob
+   #+END_SRC
+
+   Output name /enwiki-20150406-vol.slob/ is the name of the
+   directory where resulting .slob files will be created.
+
+   This is useful for crippled systems that can't use normal
+   filesystems and have file size limits, such as SD cards on
+   vanilla Android. Note that this command doesn't duplicate any
+   content, so clients must search all these slobs when looking for
+   shared resources such as stylesheets, fonts, javascript or
+   images.
 
 
 ** Examples

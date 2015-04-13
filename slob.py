@@ -2040,7 +2040,8 @@ def _arg_parser():
         'convert',
         parents=parents,
         help=('Create new slob with the same convent '
-              'but different encoding and compression parameters'))
+              'but different encoding and compression parameters '
+              'or split into multiple slobs'))
     parser_convert.add_argument('output',
                                 help='Name of slob file to create')
 
