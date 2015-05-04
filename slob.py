@@ -100,6 +100,28 @@ COMPRESSIONS = init_compressions()
 del init_compressions
 
 
+MIME_TEXT = 'text/plain'
+MIME_HTML = 'text/html'
+MIME_CSS = 'text/css'
+MIME_JS = 'application/javascript'
+
+MIME_TYPES = {
+    "html": MIME_HTML,
+    "txt": MIME_TEXT,
+    "js": MIME_JS,
+    "css": MIME_CSS,
+    "json": "application/json",
+    "woff": "application/font-woff",
+    "svg": "image/svg+xml",
+    "png": "image/png",
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "gif": "image/gif",
+    "ttf": "application/x-font-ttf",
+    "otf": "application/x-font-opentype"
+}
+
+
 class FileFormatException(Exception):
     pass
 
@@ -1193,9 +1215,6 @@ class TestReadWrite(unittest.TestCase):
         self.tmpdir = tempfile.TemporaryDirectory(prefix='test')
         self.path = os.path.join(self.tmpdir.name, 'test.slob')
 
-        TEXT = 'text/plain'
-        HTML = 'text/html'
-
         with create(self.path) as w:
 
             self.tags = {'a': 'abc',
@@ -1209,13 +1228,13 @@ class TestReadWrite(unittest.TestCase):
             self.blob_encoding = 'ascii'
 
             self.data = [
-                (('c', 'cc', 'ccc'), TEXT, 'Hello C 1'),
-                ('a', TEXT, 'Hello A 12'),
-                ('z', TEXT, 'Hello Z 123'),
-                ('b', TEXT, 'Hello B 1234'),
-                ('d', TEXT, 'Hello D 12345'),
-                ('uuu', HTML, '<html><body>Hello U!</body></html>'),
-                ((('yy', 'frag1'),), HTML, '<h1 name="frag1">Section 1</h1>'),
+                (('c', 'cc', 'ccc'), MIME_TEXT, 'Hello C 1'),
+                ('a', MIME_TEXT, 'Hello A 12'),
+                ('z', MIME_TEXT, 'Hello Z 123'),
+                ('b', MIME_TEXT, 'Hello B 1234'),
+                ('d', MIME_TEXT, 'Hello D 12345'),
+                ('uuu', MIME_HTML, '<html><body>Hello U!</body></html>'),
+                ((('yy', 'frag1'),), MIME_HTML, '<h1 name="frag1">Section 1</h1>'),
             ]
 
             self.all_keys = []
@@ -2071,6 +2090,77 @@ def _arg_parser():
     parser_convert.set_defaults(func=_cli_convert)
 
     return parser
+
+
+def add_dir(slb, topdir, prefix='', include_only=None,
+            mime_types=MIME_TYPES, print=print):
+    print('Adding', topdir)
+    for item in os.walk(topdir):
+        dirpath, _dirnames, filenames = item
+        for filename in filenames:
+            full_path = os.path.join(dirpath, filename)
+            rel_path = os.path.relpath(full_path, topdir)
+            if include_only and not any(
+                    rel_path.startswith(x) for x in include_only):
+                print ('SKIPPING (not included): {}'.format(rel_path))
+                continue
+            _, ext = os.path.splitext(filename)
+            ext = ext.lstrip(os.path.extsep)
+            content_type = mime_types.get(ext.lower())
+            if not content_type:
+                print('SKIPPING (unknown content type): {}'.format(rel_path))
+            else:
+                with fopen(full_path, 'rb') as f:
+                    content = f.read()
+                    key = prefix + rel_path
+                    print ('ADDING: {}'.format(key))
+                    slb.add(content, key, content_type=content_type)
+
+
+import time
+from datetime import timedelta
+
+class SimpleTimingObserver(object):
+
+    def __init__(self, p=None):
+
+        if not p is None:
+            self.p = p
+
+        self.times = {}
+
+    def p(self, text):
+        sys.stdout.write(text)
+        sys.stdout.flush()
+
+    def begin(self, name):
+        self.times[name] = time.time()
+
+    def end(self, name):
+        t0 = self.times.pop(name)
+        dt = timedelta(seconds=int(time.time() - t0))
+        return dt
+
+    def __call__(self, e):
+        p = self.p
+        begin = self.begin
+        end = self.end
+        if e.name == 'begin_finalize':
+            p('\nFinished adding content in %s' % end('content'))
+            p('\nFinalizing...')
+            begin('finalize')
+        if e.name == 'end_finalize':
+            p('\nFinalized in %s' % end('finalize'))
+        elif e.name == 'begin_resolve_aliases':
+            p('\nResolving aliases...')
+            begin('aliases')
+        elif e.name == 'end_resolve_aliases':
+            p('\nResolved aliases in %s' % end('aliases'))
+        elif e.name == 'begin_sort':
+            p('\nSorting...')
+            begin('sort')
+        elif e.name == 'end_sort':
+            p(' sorted in %s' % end('sort'))
 
 
 def main():
