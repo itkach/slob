@@ -233,6 +233,10 @@ b'Hello B'
 
     See http://github.com/itkach/slobby/
 
+*** Create from MediaWiki sites:
+
+    See https://github.com/itkach/mwscrape2slob
+
 *** Convert XDXF
 
     See http://github.com/itkach/xdxf2slob/
@@ -244,7 +248,6 @@ b'Hello B'
 *** Convert WordNet database
 
     See http://github.com/itkach/wordnet2slob/
-
 
 *** Aard 2 - Dictionary for Android
 
