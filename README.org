@@ -223,13 +223,28 @@ b'Hello B'
 
     Take a look at tests in /slob.py/ for more examples.
 
-*** Slobby - Minimalistic Web UI
+
+*** Slobber - Minimalistic Web UI (Java)
+
+    See http://github.com/itkach/slobber/
+
+
+*** Slobby - Minimalistic Web UI (Python)
 
     See http://github.com/itkach/slobby/
 
-*** Convert from Aard Dictionary
+*** Convert XDXF
+
+    See http://github.com/itkach/xdxf2slob/
+
+*** Convert Aard Dictionary's dictionaries
 
     See http://github.com/itkach/aar2slob/
+
+*** Convert WordNet database
+
+    See http://github.com/itkach/wordnet2slob/
+
 
 *** Aard 2 - Dictionary for Android
 
