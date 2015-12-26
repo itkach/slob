@@ -2140,19 +2140,24 @@ def add_dir(slb, topdir, prefix='', include_only=None,
             rel_path = os.path.relpath(full_path, topdir)
             if include_only and not any(
                     rel_path.startswith(x) for x in include_only):
-                print ('SKIPPING (not included): {}'.format(rel_path))
+                print ('SKIPPING (not included): {!a}'.format(rel_path))
                 continue
             _, ext = os.path.splitext(filename)
             ext = ext.lstrip(os.path.extsep)
             content_type = mime_types.get(ext.lower())
             if not content_type:
-                print('SKIPPING (unknown content type): {}'.format(rel_path))
+                print('SKIPPING (unknown content type): {!a}'.format(rel_path))
             else:
                 with fopen(full_path, 'rb') as f:
                     content = f.read()
                     key = prefix + rel_path
-                    print ('ADDING: {}'.format(key))
-                    slb.add(content, key, content_type=content_type)
+                    print ('ADDING: {!a}'.format(key))
+                    try:
+                        key.encode(slb.encoding)
+                    except UnicodeEncodeError:
+                        print ('Failed to add, broken unicode in key: {!a}'.format(key))
+                    else:
+                        slb.add(content, key, content_type=content_type)
 
 
 import time
