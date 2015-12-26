@@ -1883,6 +1883,38 @@ def _cli_find(args):
             if i == args.limit:
                 break
 
+def _cli_aliases(args):
+    word = args.query
+    with open(args.path) as s:
+        d = s.as_dict(strength=QUATERNARY)
+        length = len(s)
+        aliases = []
+
+        def print_item(i, item):
+            print(('\t {:>%s} {}' % len(str(length)))
+                  .format(i, item.key))
+
+        for blob in d[word]:
+            print(blob.id, blob.content_type, blob.key)
+            progress = ''
+            for i, item in enumerate(s):
+                if i % 10000 == 0:
+                    new_progress = '{:>4.1f}% ...'.format(100*i/length)
+                    if new_progress != progress:
+                        print(new_progress)
+                        progress = new_progress
+
+                if item.id == blob.id:
+                    aliases.append((i, item))
+                    print_item(i, item)
+            print('100%')
+            header = '{} {}'.format(blob.id, blob.content_type)
+            print('='*len(header), '\n')
+            print(header)
+            print('-'*len(header))
+            for i, item in aliases:
+                print_item(i, item)
+
 
 def _cli_get(args):
     with open(args.path) as s:
@@ -2028,6 +2060,12 @@ def _arg_parser():
     parser_find.add_argument('-l', '--limit', type=int, default=10,
                              help='Maximum number of results to display')
     parser_find.set_defaults(func=_cli_find)
+
+    parser_aliases = subparsers.add_parser('aliases',
+                                            parents=parents,
+                                            help='Find blob aliases', )
+    parser_aliases.add_argument('query', help='Word to look up')
+    parser_aliases.set_defaults(func=_cli_aliases)
 
     parser_get = subparsers.add_parser('get',
                                         parents=parents,
