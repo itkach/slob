@@ -2023,7 +2023,7 @@ def _cli_convert(args):
                     keys.append((ref.key, ref.fragment))
                 if w is None:
                     volume_count += 1
-                    if split:
+                    if split > 0:
                         current_output = os.path.join(
                             output_dir,
                             ''.join((output_base_noext,
