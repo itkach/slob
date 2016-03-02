@@ -2034,7 +2034,7 @@ def _cli_convert(args):
                 current_size = (size_header_and_tags +
                                 w.size_content_types() +
                                 w.size_data())
-                if split and current_size + min_bin_size >= split:
+                if split > 0 and current_size + min_bin_size >= split:
                     t1, w, size_header_and_tags = fin(t1, w, current_output)
         if w:
             fin(t1, w, current_output)
