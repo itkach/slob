@@ -241,6 +241,9 @@ b'Hello B'
 
     See http://github.com/itkach/xdxf2slob/
 
+*** Convert TEI
+    See https://github.com/itkach/tei2slob/
+
 *** Convert Aard Dictionary's dictionaries
 
     See http://github.com/itkach/aar2slob/
