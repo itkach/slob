@@ -2096,7 +2096,7 @@ def _arg_parser():
     parser_convert = subparsers.add_parser(
         'convert',
         parents=parents,
-        help=('Create new slob with the same convent '
+        help=('Create new slob with the same content '
               'but different encoding and compression parameters '
               'or split into multiple slobs'))
     parser_convert.add_argument('output',
