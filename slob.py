@@ -57,6 +57,7 @@ U_LONG_LONG_SIZE = calcsize(U_LONG_LONG)
 MAX_TEXT_LEN = 2**(U_SHORT_SIZE*8) - 1
 MAX_TINY_TEXT_LEN = 2**(U_CHAR_SIZE*8) - 1
 MAX_LARGE_BYTE_STRING_LEN = 2**(U_INT_SIZE*8) - 1
+MAX_BIN_ITEM_COUNT = 2**(U_SHORT_SIZE*8) - 1
 
 from icu import Locale, Collator, UCollAttribute, UCollAttributeValue
 
@@ -955,7 +956,8 @@ class Writer(object):
         for actual_key, fragment in actual_keys:
             self._write_ref(actual_key, bin_index, bin_item_index, fragment)
 
-        if self.current_bin.current_offset > self.min_bin_size:
+        if (self.current_bin.current_offset > self.min_bin_size or
+            len(self.current_bin) == MAX_BIN_ITEM_COUNT):
             self._write_current_bin()
 
     def add_alias(self, key, target_key):
@@ -1809,6 +1811,22 @@ class TestEditTag(unittest.TestCase):
 
     def test_edit_nonexisting_tag(self):
         self.assertRaises(TagNotFound, set_tag_value, self.path, 'z', 'abc')
+
+
+class TestBinItemNumberLimit(unittest.TestCase):
+
+    def setUp(self):
+        self.tmpdir = tempfile.TemporaryDirectory(prefix='test')
+        self.path = os.path.join(self.tmpdir.name, 'test.slob')
+
+    def tearDown(self):
+        self.tmpdir.cleanup()
+
+    def test_writing_more_then_max_number_of_bin_items(self):
+        with create(self.path) as w:
+            for _ in range(MAX_BIN_ITEM_COUNT+2):
+                w.add(b'a', 'a')
+            self.assertEqual(w.bin_count, 2)
 
 
 def _cli_info(args):
