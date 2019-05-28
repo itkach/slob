@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='Slob',
-      version='1.0.1',
+      version='1.0.2',
       description='Read-only compressed data store',
       author='Igor Tkach',
       author_email='itkach@gmail.com',
