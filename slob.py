@@ -14,17 +14,17 @@ import unicodedata
 import unittest
 import warnings
 
-from builtins import open as fopen
-from uuid import uuid4, UUID
-from collections.abc import Sequence
+from abc import abstractmethod
 from bisect import bisect_left
+from builtins import open as fopen
 from collections import namedtuple
+from collections.abc import Sequence
+from datetime import datetime, timezone
 from functools import lru_cache
 from struct import pack, unpack, calcsize
-from types import MappingProxyType
 from threading import RLock
-from abc import abstractmethod
-from datetime import datetime, timezone
+from types import MappingProxyType
+from uuid import uuid4, UUID
 
 import icu
 
