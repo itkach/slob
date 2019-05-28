@@ -54,10 +54,15 @@ U_INT_SIZE = calcsize(U_INT)
 U_LONG_LONG = '>Q'
 U_LONG_LONG_SIZE = calcsize(U_LONG_LONG)
 
-MAX_TEXT_LEN = 2**(U_SHORT_SIZE*8) - 1
-MAX_TINY_TEXT_LEN = 2**(U_CHAR_SIZE*8) - 1
-MAX_LARGE_BYTE_STRING_LEN = 2**(U_INT_SIZE*8) - 1
-MAX_BIN_ITEM_COUNT = 2**(U_SHORT_SIZE*8) - 1
+
+
+def calcmax(len_size_spec):
+    return 2**(calcsize(len_size_spec)*8) - 1
+
+MAX_TEXT_LEN = calcmax(U_SHORT)
+MAX_TINY_TEXT_LEN = calcmax(U_CHAR)
+MAX_LARGE_BYTE_STRING_LEN = calcmax(U_INT)
+MAX_BIN_ITEM_COUNT = calcmax(U_SHORT)
 
 from icu import Locale, Collator, UCollAttribute, UCollAttributeValue
 
@@ -413,6 +418,9 @@ class StructWriter:
             encoding = self.encoding
         text_bytes = text.encode(encoding)
         length = len(text_bytes)
+        max_length = calcmax(len_size_spec)
+        if length > max_length:
+            raise ValueError("Text is too long for size spec %s" % len_size_spec)
         self._file.write(
             pack(len_size_spec,
                  pad_to_length if pad_to_length else length))
@@ -902,9 +910,14 @@ class Writer(object):
             encoding=self.encoding)
 
     def tag(self, name, value=''):
-        if len(name) > MAX_TINY_TEXT_LEN or len(value) > MAX_TINY_TEXT_LEN:
-            self._fire_event('tag_too_long', (name, value))
+        if len(name.encode(self.encoding)) > MAX_TINY_TEXT_LEN:
+            self._fire_event('tag_name_too_long', (name, value))
             return
+
+        if len(value.encode(self.encoding)) > MAX_TINY_TEXT_LEN:
+            self._fire_event('tag_value_too_long', (name, value))
+            value = ''
+
         self._tags[name] = value
 
     def _split_key(self, key):
@@ -1721,7 +1734,7 @@ class TestTooLongText(unittest.TestCase):
                 rejected_aliases.append(event.data)
             elif event.name == 'alias_target_too_long':
                 rejected_alias_targets.append(event.data)
-            elif event.name == 'tag_too_long':
+            elif event.name == 'tag_name_too_long':
                 rejected_tags.append(event.data)
             elif event.name == 'content_type_too_long':
                 rejected_content_types.append(event.data)
@@ -1769,14 +1782,15 @@ class TestTooLongText(unittest.TestCase):
         self.assertEqual(rejected_alias_targets,
                          [long_alias_target, long_alias_target_frag])
         self.assertEqual(rejected_tags,
-                         [tag_with_long_value, tag_with_long_name])
+                         [tag_with_long_name])
         self.assertEqual(rejected_content_types,
                          [long_content_type])
 
         with open(self.path) as r:
             self.assertEqual(r.tags['t2'], 't2 value')
             self.assertFalse(tag_with_long_name[0] in r.tags)
-            self.assertFalse(tag_with_long_value[0] in r.tags)
+            self.assertTrue(tag_with_long_value[0] in r.tags)
+            self.assertEqual(r.tags[tag_with_long_value[0]], '')
             d = r.as_dict()
             self.assertTrue('a' in d)
             self.assertTrue('b' in d)
@@ -1785,6 +1799,8 @@ class TestTooLongText(unittest.TestCase):
             self.assertTrue('e' in d)
             self.assertFalse(long_alias in d)
             self.assertFalse('g' in d)
+
+        self.assertRaises(ValueError, set_tag_value, self.path, 't1', 'ы'*128)
 
 
 class TestEditTag(unittest.TestCase):
