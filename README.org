@@ -252,6 +252,10 @@ b'Hello B'
 
     See http://github.com/itkach/wordnet2slob/
 
+*** pyglossary - convert various formats
+
+    See https://github.com/ilius/pyglossary
+
 *** Aard 2 - Dictionary for Android
 
     See http://github.com/itkach/aard2-android/
