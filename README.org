@@ -27,7 +27,7 @@
    required packages:
 
    #+BEGIN_SRC sh
-   sudo apt-get install python3 python3-icu python-virtualenv git
+   sudo apt-get install python3 python3-icu python3-virtualenv git
    #+END_SRC
 
    Create new Python virtual environment:
