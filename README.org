@@ -233,9 +233,9 @@ b'Hello B'
 
     See http://github.com/itkach/slobby/
 
-*** Create from MediaWiki sites:
+*** Create from Wikimedia Enterprise HTML Dumps or MediaWiki API:
 
-    See https://github.com/itkach/mwscrape2slob
+    See https://github.com/itkach/mw2slob
 
 *** Convert XDXF
 
