@@ -10,7 +10,7 @@
 
    /slob.py/ depends on the following components:
 
-   - [[http://python.org][Python]] >= 3.3
+   - [[http://python.org][Python]] >= 3.6
    - [[http://icu-project.org][ICU]] >= 4.8
    - [[https://pypi.python.org/pypi/PyICU][PyICU]] >= 1.5
 
@@ -23,17 +23,18 @@
    Consult your operating system documentation and these component's
    websites for installation instructions.
 
-   For example, on Ubuntu 14.04, the following command installs
+   For example, on Ubuntu 20.04, the following command installs
    required packages:
 
    #+BEGIN_SRC sh
-   sudo apt-get install python3 python3-icu python3-virtualenv git
+   sudo apt update
+   sudo apt install python3 python3-icu python3.8-venv git
    #+END_SRC
 
    Create new Python virtual environment:
 
    #+BEGIN_SRC sh
-   virtualenv env-slob -p python3 --system-site-packages
+   python3 -m venv env-slob --system-site-packages   
    #+END_SRC
 
    Activate it:
