@@ -34,7 +34,7 @@
    Create new Python virtual environment:
 
    #+BEGIN_SRC sh
-   python3 -m venv env-slob --system-site-packages   
+   python3 -m venv env-slob --system-site-packages
    #+END_SRC
 
    Activate it:
@@ -225,45 +225,18 @@ b'Hello B'
     Take a look at tests in /slob.py/ for more examples.
 
 
-*** Slobber - Minimalistic Web UI (Java)
+*** Software and Dictionaries
 
-    See http://github.com/itkach/slobber/
-
-
-*** Slobby - Minimalistic Web UI (Python)
-
-    See http://github.com/itkach/slobby/
-
-*** Create from Wikimedia Enterprise HTML Dumps or MediaWiki API:
-
-    See https://github.com/itkach/mw2slob
-
-*** Convert XDXF
-
-    See http://github.com/itkach/xdxf2slob/
-
-*** Convert TEI
-    See https://github.com/itkach/tei2slob/
-
-*** Convert Aard Dictionary's dictionaries
-
-    See http://github.com/itkach/aar2slob/
-
-*** Convert WordNet database
-
-    See http://github.com/itkach/wordnet2slob/
-
-*** pyglossary - convert various formats
-
-    See https://github.com/ilius/pyglossary
-
-*** Aard 2 - Dictionary for Android
-
-    See http://github.com/itkach/aard2-android/
-
-*** Download Content in Slob Format
-
-    See https://github.com/itkach/slob/wiki/Dictionaries
+- [[https://github.com/itkach/slob/wiki/Dictionaries][Wikipedia, Wiktionary, WordNet, FreeDict and more]]
+- [[http://github.com/itkach/aard2-android/][aard2-android]] - dictionary for Android
+- [[https://github.com/itkach/aard2-web][aard2-web]] - minimalistic Web UI (Java)
+- [[http://github.com/itkach/slobber/][slobber]] - Web API to look up content in slob dictionaries
+- [[http://github.com/itkach/slobby/][slobby]] - minimalistic Web UI (Python)
+- [[https://github.com/ilius/pyglossary][pyglossary]] - convert dictionaries in various formats, including slob
+- [[https://github.com/itkach/mw2slob][mw2slob]] - create slob dictionaries from Wikimedia Enterprise HTML Dumps or MediaWiki API
+- [[http://github.com/itkach/xdxf2slob/][xdxf2slob]] - create slob dictionaries from XDXF
+- [[https://github.com/itkach/tei2slob/][tei2slob]] - create slob dictionaries from TEI
+- [[http://github.com/itkach/wordnet2slob/][wordnet2slob]] - convert WordNet databaset to slob dictionary
 
 
 ** Slob File Format
@@ -381,7 +354,7 @@ storage bin are large byte strings - actual content bytes.
 
 ** Design Considerations
 
-   Slob format design is influenced by [[http://aarddict.org/][Aard Dictionary]]'s aard and [[http://openzim.org/][ZIM]]
+   Slob format design is influenced by old Aard Dictionary's [[https://github.com/aarddict/tools/blob/master/doc/aardformat.rst][aard]] and [[http://openzim.org/][ZIM]]
    file formats. Similar to Aard Dictionary, it allows to perform
    non-exact lookups based on UCA's notion of collation
    strength. Similar to ZIM, it groups and compresses multiple
@@ -395,8 +368,8 @@ storage bin are large byte strings - actual content bytes.
 
 *** No Format Version
     Slob header doesn't contain explicit file format version
-    number. Any incompatible changes after the format is finalized
-    will be introduced in a new file format which will get its own
+    number. Any incompatible changes to the format
+    should be introduced in a new file format which will get its own
     identifying magic bytes.
 
 *** No Content Checksum
