@@ -1077,13 +1077,21 @@ class Writer(object):
                                 alias_writer.add(pickle.dumps(ref), key)
 
         with open(path) as resolved_aliases_reader:
-            previous_key = None
+            previous = None
+            targets = set()
+
             for item in resolved_aliases_reader:
                 ref = pickle.loads(item.content)
-                if ref.key == previous_key:
-                    continue
-                self._write_ref(ref.key, ref.bin_index, ref.item_index, ref.fragment)
-                previous_key = ref.key
+                if previous is not None and ref.key != previous.key:
+                    for bin_index, item_index, fragment in targets:
+                        self._write_ref(previous.key, bin_index, item_index, fragment)
+                    targets.clear()
+                targets.add((ref.bin_index, ref.item_index, ref.fragment))
+                previous = ref
+
+            for bin_index, item_index, fragment in targets:
+                self._write_ref(previous.key, bin_index, item_index, fragment)
+
         self._sort()
         self._fire_event("end_resolve_aliases")
 
@@ -1572,6 +1580,7 @@ class TestAlias(unittest.TestCase):
                 w.add(v.encode("ascii"), k)
 
             w.add_alias("w", "u")
+            w.add_alias("small u", "u")
             w.add_alias("y1", "y2")
             w.add_alias("y2", "y3")
             w.add_alias("y3", "z")
@@ -1588,6 +1597,9 @@ class TestAlias(unittest.TestCase):
             w.add_alias("g1", "g")
             w.add_alias("g2", ("g1", "g-frag1"))
 
+            w.add_alias("n or p", "n")
+            w.add_alias("n or p", "p")
+
         self.assertEqual(too_many_redirects, ["l1", "l2", "l3"])
         self.assertEqual(target_not_found, ["l2", "l3", "l1", "YYY"])
 
@@ -1598,6 +1610,7 @@ class TestAlias(unittest.TestCase):
                 return list(item.content.decode("ascii") for item in d[key])
 
             self.assertEqual(get("w"), ["LATIN SMALL LETTER U"])
+            self.assertEqual(get("small u"), ["LATIN SMALL LETTER U"])
             self.assertEqual(get("y1"), ["LATIN SMALL LETTER Z"])
             self.assertEqual(get("y2"), ["LATIN SMALL LETTER Z"])
             self.assertEqual(get("y3"), ["LATIN SMALL LETTER Z"])
@@ -1605,6 +1618,8 @@ class TestAlias(unittest.TestCase):
             self.assertEqual(get("l1"), [])
             self.assertEqual(get("l2"), [])
             self.assertEqual(get("l3"), [])
+
+            self.assertEqual(len(list(d["n or p"])), 2)
 
             item_a1 = next(d["a1"])
             self.assertEqual(item_a1.content, b"LATIN SMALL LETTER A")
