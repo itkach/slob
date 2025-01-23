@@ -229,6 +229,7 @@ b'Hello B'
 
 - [[https://github.com/itkach/slob/wiki/Dictionaries][Wikipedia, Wiktionary, WordNet, FreeDict and more]]
 - [[http://github.com/itkach/aard2-android/][aard2-android]] - dictionary for Android
+  - [[https://github.com/farfromrefug/OSS-Dict][OSS-Dict]] - fork of Aard2 with new Material design and updated features
 - [[https://github.com/itkach/aard2-web][aard2-web]] - minimalistic Web UI (Java)
 - [[http://github.com/itkach/slobber/][slobber]] - Web API to look up content in slob dictionaries
 - [[http://github.com/itkach/slobby/][slobby]] - minimalistic Web UI (Python)
