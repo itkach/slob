@@ -233,6 +233,7 @@ b'Hello B'
 - [[https://github.com/itkach/aard2-web][aard2-web]] - minimalistic Web UI (Java)
 - [[http://github.com/itkach/slobber/][slobber]] - Web API to look up content in slob dictionaries
 - [[http://github.com/itkach/slobby/][slobby]] - minimalistic Web UI (Python)
+- [[https://github.com/MuntashirAkon/SlobDict][SlobDict]] - modern, lightweight GTK 4 dictionary app for Linux
 - [[https://github.com/ilius/pyglossary][pyglossary]] - convert dictionaries in various formats, including slob
 - [[https://github.com/itkach/mw2slob][mw2slob]] - create slob dictionaries from Wikimedia Enterprise HTML Dumps or MediaWiki API
 - [[http://github.com/itkach/xdxf2slob/][xdxf2slob]] - create slob dictionaries from XDXF
