@@ -231,9 +231,11 @@ b'Hello B'
 - [[http://github.com/itkach/aard2-android/][aard2-android]] - dictionary for Android
   - [[https://github.com/farfromrefug/OSS-Dict][OSS-Dict]] - fork of Aard2 with new Material design and updated features
 - [[https://github.com/itkach/aard2-web][aard2-web]] - minimalistic Web UI (Java)
+- [[https://github.com/goldendict/goldendict][GoldenDict]] - Feature-rich dictionary lookup program supporting multiple dictionary formats including slob
+  - [[https://github.com/xiaoyifang/goldendict-ng][GoldenDict-ng]] - The Next Generation GoldenDict
 - [[http://github.com/itkach/slobber/][slobber]] - Web API to look up content in slob dictionaries
 - [[http://github.com/itkach/slobby/][slobby]] - minimalistic Web UI (Python)
-- [[https://github.com/MuntashirAkon/SlobDict][SlobDict]] - modern, lightweight GTK 4 dictionary app for Linux
+- [[https://github.com/MuntashirAkon/SlobDict][SlobDict]] - modern, lightweight GTK 4 dictionary app for Linux (Python)
 - [[https://github.com/ilius/pyglossary][pyglossary]] - convert dictionaries in various formats, including slob
 - [[https://github.com/itkach/mw2slob][mw2slob]] - create slob dictionaries from Wikimedia Enterprise HTML Dumps or MediaWiki API
 - [[http://github.com/itkach/xdxf2slob/][xdxf2slob]] - create slob dictionaries from XDXF
